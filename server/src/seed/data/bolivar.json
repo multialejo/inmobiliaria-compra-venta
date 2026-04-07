@@ -1,0 +1,71 @@
+{
+  "201": {
+    "canton": "GUARANDA",
+    "parroquias": {
+      "20101": "ÁNGEL POLIBIO CHÁVES",
+      "20102": "GABRIEL IGNACIO VEINTIMILLA",
+      "20103": "GUANUJO",
+      "20150": "GUARANDA",
+      "20151": "FACUNDO VELA",
+      "20152": "GUANUJO",
+      "20153": "JULIO E. MORENO (CATANAHUÁN GRANDE)",
+      "20154": "LAS NAVES",
+      "20155": "SALINAS",
+      "20156": "SAN LORENZO",
+      "20157": "SAN SIMÓN (YACOTO)",
+      "20158": "SANTA FÉ (SANTA FÉ)",
+      "20159": "SIMIÁTUG",
+      "20160": "SAN LUIS DE PAMBIL"
+    }
+  },
+  "202": {
+    "canton": "CHILLANES",
+    "parroquias": {
+      "20250": "CHILLANES",
+      "20251": "SAN JOSÉ DEL TAMBO (TAMBOPAMBA)"
+    }
+  },
+  "203": {
+    "canton": "CHIMBO",
+    "parroquias": {
+      "20350": "SAN JOSÉ DE CHIMBO",
+      "20351": "ASUNCIÓN (ASANCOTO)",
+      "20352": "CALUMA",
+      "20353": "MAGDALENA (CHAPACOTO)",
+      "20354": "SAN SEBASTIÁN",
+      "20355": "TELIMBELA"
+    }
+  },
+  "204": {
+    "canton": "ECHEANDÍA",
+    "parroquias": {
+      "20450": "ECHEANDÍA"
+    }
+  },
+  "205": {
+    "canton": "SAN MIGUEL",
+    "parroquias": {
+      "20550": "SAN MIGUEL",
+      "20551": "BALSAPAMBA",
+      "20552": "BILOVÁN",
+      "20553": "RÉGULO DE MORA",
+      "20554": "SAN PABLO (SAN PABLO DE ATENAS)",
+      "20555": "SANTIAGO",
+      "20556": "SAN VICENTE"
+    }
+  },
+  "206": {
+    "canton": "CALUMA",
+    "parroquias": {
+      "20650": "CALUMA"
+    }
+  },
+  "207": {
+    "canton": "LAS NAVES",
+    "parroquias": {
+      "20701": "LAS MERCEDES",
+      "20702": "LAS NAVES",
+      "20750": "LAS NAVES"
+    }
+  }
+}

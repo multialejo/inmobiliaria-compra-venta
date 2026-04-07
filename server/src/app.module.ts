@@ -6,6 +6,7 @@ import { Canton } from './cantones/entities/canton.entity';
 import { Parroquia } from './parroquias/entities/parroquia.entity';
 import { Usuario } from './usuarios/entities/usuario.entity';
 import { Propiedad } from './propiedades/entities/propiedad.entity';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -19,8 +20,9 @@ import { Propiedad } from './propiedades/entities/propiedad.entity';
       entities: [Canton, Parroquia, Usuario, Propiedad],
       synchronize: true,
     }),
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
