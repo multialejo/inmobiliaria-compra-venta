@@ -45,13 +45,13 @@ git clone <url-del-repositorio>
 cd server
 ```
 
-1. Instalar dependencias:
+2. Instalar dependencias:
 
 ```bash
 npm install
 ```
 
-1. Configurar variables de entorno:
+3. Configurar variables de entorno:
    - Editar `src/app.module.ts` para configurar la conexión a la base de datos
    - Por defecto está configurado:
      - Host: localhost
@@ -60,13 +60,13 @@ npm install
      - Contraseña: admin123
      - Base de datos: inmobiliaria
 
-2. Crear la base de datos MySQL:
+4. Crear la base de datos MySQL:
 
 ```sql
 CREATE DATABASE inmobiliaria;
 ```
 
-1. La aplicación sincroniza automáticamente las entidades con la base de datos (synchronize: true).
+5. La aplicación sincroniza automáticamente las entidades con la base de datos (synchronize: true).
 
 ## Ejecutar el Proyecto
 
