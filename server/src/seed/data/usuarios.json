@@ -1,0 +1,23 @@
+[
+  {
+    "nombre": "Admin Principal",
+    "email": "admin@inmobiliaria.com",
+    "contrasena": "admin123",
+    "telefono": "0999999999",
+    "rol": "administrador"
+  },
+  {
+    "nombre": "Agente Uno",
+    "email": "agente1@inmobiliaria.com",
+    "contrasena": "agente123",
+    "telefono": "0988888888",
+    "rol": "agente"
+  },
+  {
+    "nombre": "Agente Dos",
+    "email": "agente2@inmobiliaria.com",
+    "contrasena": "agente123",
+    "telefono": "0977777777",
+    "rol": "agente"
+  }
+]

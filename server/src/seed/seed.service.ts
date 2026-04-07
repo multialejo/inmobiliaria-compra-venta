@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Canton } from '../cantones/entities/canton.entity';
 import { Parroquia } from '../parroquias/entities/parroquia.entity';
+import { Usuario, RolUsuario } from '../usuarios/entities/usuario.entity';
 import bolivarData from './data/bolivar.json';
+import usuariosData from './data/usuarios.json';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -12,7 +14,9 @@ export class SeedService implements OnModuleInit {
     private cantonRepository: Repository<Canton>,
     @InjectRepository(Parroquia)
     private parroquiaRepository: Repository<Parroquia>,
-  ) { }
+    @InjectRepository(Usuario)
+    private usuarioRepository: Repository<Usuario>,
+  ) {}
 
   async onModuleInit() {
     const count = await this.cantonRepository.count();
@@ -21,11 +25,10 @@ export class SeedService implements OnModuleInit {
       return;
     }
     await this.seedBolivar();
+    await this.seedUsuarios();
   }
 
   async seedBolivar() {
-    // console.log('Iniciando seed de cantones y parroquias de Bolívar...');
-
     for (const [cantonKey, cantonData] of Object.entries(bolivarData)) {
       const canton = this.cantonRepository.create({
         id: parseInt(cantonKey),
@@ -50,8 +53,21 @@ export class SeedService implements OnModuleInit {
         `Canton ${cantonData.canton} seedeado con ${parroquias.length} parroquias`,
       );
     }
+  }
 
-    // console.log('Seed de Bolívar completado!');
+  async seedUsuarios() {
+    for (const usuario of usuariosData) {
+      const newUsuario = this.usuarioRepository.create({
+        ...usuario,
+        rol:
+          usuario.rol === 'administrador'
+            ? RolUsuario.ADMINISTRADOR
+            : RolUsuario.AGENTE,
+      });
+      await this.usuarioRepository.save(newUsuario);
+    }
+
+    console.log(`Seedeados ${usuariosData.length} usuarios`);
   }
 
   async reset() {
@@ -59,5 +75,6 @@ export class SeedService implements OnModuleInit {
     await this.cantonRepository.delete({});
     console.log('Datos de Bolívar eliminados');
     await this.seedBolivar();
+    await this.seedUsuarios();
   }
 }
