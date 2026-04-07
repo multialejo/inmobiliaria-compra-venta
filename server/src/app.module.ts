@@ -7,6 +7,8 @@ import { Parroquia } from './parroquias/entities/parroquia.entity';
 import { Usuario } from './usuarios/entities/usuario.entity';
 import { Propiedad } from './propiedades/entities/propiedad.entity';
 import { SeedModule } from './seed/seed.module';
+import { CantonesModule } from './cantones/cantones.module';
+import { ParroquiasModule } from './parroquias/parroquias.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { SeedModule } from './seed/seed.module';
       synchronize: true,
     }),
     SeedModule,
+    CantonesModule,
+    ParroquiasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

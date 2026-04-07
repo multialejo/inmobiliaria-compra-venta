@@ -98,7 +98,33 @@ El servidor estará disponible en `http://localhost:3000`
 
 ## Endpoints
 
-Los endpoints se configurarán automáticamente según los módulos implementados. Consulta la documentación de la API para más detalles.
+### Quick Start - Prueba los endpoints
+
+Al iniciar la aplicación, los datos de cantones y parroquias de Bolívar se cargan automáticamente. Prueba estos endpoints para explorar la API:
+
+```bash
+# Listar todos los cantones
+curl http://localhost:3000/cantones
+
+# Obtener un canton específico
+curl http://localhost:3000/cantones/201
+
+# Listar todas las parroquias
+curl http://localhost:3000/parroquias
+
+# Listar parroquias de un canton (ej: Guaranda = 201)
+curl http://localhost:3000/parroquias/canton/201
+```
+
+### Endpoints Disponibles
+
+| Método | Ruta                           | Descripción                   |
+| ------ | ------------------------------ | ----------------------------- |
+| GET    | `/cantones`                    | Lista todos los cantones      |
+| GET    | `/cantones/:id`                | Obtiene un canton por ID      |
+| GET    | `/parroquias`                  | Lista todas las parroquias    |
+| GET    | `/parroquias/:id`              | Obtiene una parroquia por ID  |
+| GET    | `/parroquias/canton/:cantonId` | Lista parroquias de un canton |
 
 ## Base de Datos
 
