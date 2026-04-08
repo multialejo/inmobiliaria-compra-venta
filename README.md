@@ -1,6 +1,8 @@
 # Sistema de Gestion de Compra y Venta de Bienes Inmobilarios en la Provincia de Bolivar.
 
-
+**Integrantes:**
+- Ariel Alejandro Calderón
+- Andony Fernando Cortez
 
 ## Descripción del problema
 
