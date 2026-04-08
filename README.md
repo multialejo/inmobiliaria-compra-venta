@@ -3,6 +3,7 @@
 **Integrantes:**
 - Ariel Alejandro Calderón
 - Andony Fernando Cortez
+- Jonathan Ayme 
 
 ## Descripción del problema
 
