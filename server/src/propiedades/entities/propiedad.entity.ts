@@ -26,7 +26,7 @@ export enum EstadoPropiedad {
 
 @Entity('propiedades')
 export class Propiedad {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: number;
 
   @Column({ length: 255 })
@@ -72,7 +72,7 @@ export class Propiedad {
   parroquia: Parroquia;
 
   @Column({ name: 'agente_id' })
-  agente_id: number;
+  agente_id: string;
 
   @ManyToOne(() => Usuario, (usuario) => usuario.propiedades)
   @JoinColumn({ name: 'agente_id' })

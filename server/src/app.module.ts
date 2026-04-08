@@ -9,6 +9,7 @@ import { Propiedad } from './propiedades/entities/propiedad.entity';
 import { SeedModule } from './seed/seed.module';
 import { CantonesModule } from './cantones/cantones.module';
 import { ParroquiasModule } from './parroquias/parroquias.module';
+import { PropiedadesModule } from './propiedades/propiedades.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ParroquiasModule } from './parroquias/parroquias.module';
     SeedModule,
     CantonesModule,
     ParroquiasModule,
+    PropiedadesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
