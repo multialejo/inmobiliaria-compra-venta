@@ -104,27 +104,27 @@ Al iniciar la aplicación, los datos de cantones y parroquias de Bolívar se car
 
 ```bash
 # Listar todos los cantones
-curl http://localhost:3000/cantones
+curl http://localhost:3000/api/cantones
 
 # Obtener un canton específico
-curl http://localhost:3000/cantones/201
+curl http://localhost:3000/api/cantones/201
 
 # Listar todas las parroquias
-curl http://localhost:3000/parroquias
+curl http://localhost:3000/api/parroquias
 
 # Listar parroquias de un canton (ej: Guaranda = 201)
-curl http://localhost:3000/parroquias/canton/201
+curl http://localhost:3000/api/parroquias/canton/201
 ```
 
 ### Endpoints Disponibles
 
 | Método | Ruta                           | Descripción                   |
 | ------ | ------------------------------ | ----------------------------- |
-| GET    | `/cantones`                    | Lista todos los cantones      |
-| GET    | `/cantones/:id`                | Obtiene un canton por ID      |
-| GET    | `/parroquias`                  | Lista todas las parroquias    |
-| GET    | `/parroquias/:id`              | Obtiene una parroquia por ID  |
-| GET    | `/parroquias/canton/:cantonId` | Lista parroquias de un canton |
+| GET    | `api/cantones`                    | Lista todos los cantones      |
+| GET    | `api/cantones/:id`                | Obtiene un canton por ID      |
+| GET    | `api/parroquias`                  | Lista todas las parroquias    |
+| GET    | `api/parroquias/:id`              | Obtiene una parroquia por ID  |
+| GET    | `api/parroquias/canton/:cantonId` | Lista parroquias de un canton |
 
 ## Base de Datos
 
