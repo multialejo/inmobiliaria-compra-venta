@@ -4,7 +4,7 @@
 - Ariel Alejandro Calderón
 - Andony Fernando Cortez
 - Jonathan Ayme 
-
+- Neicer Jimenez
 ## Descripción del problema
 
 En la provincia de Bolívar, muchas agencias inmobiliarias gestionan la información de propiedades y clientes de manera manual o mediante herramientas poco integradas, lo que genera desorganización, pérdida de información y retrasos en los procesos de venta.
@@ -90,3 +90,4 @@ Desarrollar un sistema de gestión de ventas inmobiliarias enfocado en la provin
 - **Conexión Cliente-Servidor**: Vincular la interfaz de React con los servicios de NestJS para asegurar que la comunicación sea clara y escalable.
 - **Pruebas de Funcionalidad**: Verificar el ciclo completo de gestión de propiedades (crear, editar, eliminar) utilizando datos de cantones como Guaranda para asegurar que el sistema cumple con las necesidades de la provincia.
 
+75965976
