@@ -23,8 +23,7 @@ export class PropiedadesService {
     });
   }
 
-  async findOne(id: string): Promise<Propiedad> {
-    // const propiedad = await this.propiedadRepository.findOneBy({id});
+  async findOne(id: number): Promise<Propiedad> {
     const propiedad = await this.propiedadRepository.findOne({
       where: { id },
       relations: ['canton', 'parroquia', 'agente'],
@@ -35,13 +34,13 @@ export class PropiedadesService {
     return propiedad;
   }
 
-  async update(id: string, updatePropiedadDto: UpdatePropiedadDto) {
+  async update(id: number, updatePropiedadDto: UpdatePropiedadDto) {
     const propiedad = await this.findOne(id);
     Object.assign(propiedad, updatePropiedadDto);
     return this.propiedadRepository.save(propiedad);
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     const propiedad = await this.findOne(id);
     await this.propiedadRepository.remove(propiedad);
     return { message: `Propiedad con ID ${id} eliminada` };
