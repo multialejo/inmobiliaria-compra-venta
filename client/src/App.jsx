@@ -1,88 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/propiedades';
 
 function App() {
   const [propiedades, setPropiedades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProp, setSelectedProp] = useState(null);
-
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
-  const [cantones, setCantones] = useState([]);
-  const [parroquias, setParroquias] = useState([]);
-  const [imagenes, setImagenes] = useState([]);
-  const [imagenUrl, setImagenUrl] = useState('');
-  const AGENTE_ID = 'cf257d18-c570-4e0c-b777-fbcc960ab51c';
-
-  // TODO(Opción B): Agregar upload de archivos directamente al servidor
-  // - Crear endpoint POST /upload en backend con multer
-  // - Agregar input type="file" múltiples
-  // - Subir imagenes a Cloudinary/S3 y guardar URLs
 
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
     precio: '',
     direccion: '',
-    tipo_inmueble: '',
-    superficie_m2: '',
-    canton_id: '',
-    parroquia_id: '',
   });
 
   useEffect(() => {
     fetchPropiedades();
-    fetchCantones();
   }, []);
-
-  const fetchCantones = async () => {
-    try {
-      const response = await fetch(`${API_URL}/cantones`);
-      const data = await response.json();
-      setCantones(data);
-    } catch (error) {
-      console.error('Error al obtener cantones:', error);
-    }
-  };
-
-  const fetchParroquias = async (cantonId) => {
-    try {
-      const response = await fetch(`${API_URL}/parroquias/canton/${cantonId}`);
-      const data = await response.json();
-      setParroquias(data);
-    } catch (error) {
-      console.error('Error al obtener parroquias:', error);
-    }
-  };
-
-  const handleCantonChange = (e) => {
-    const cantonId = e.target.value;
-    setFormData({ ...formData, canton_id: cantonId });
-    if (cantonId) {
-      fetchParroquias(cantonId);
-    } else {
-      setParroquias([]);
-    }
-  };
-
-  const handleAddImagen = () => {
-    if (imagenUrl.trim()) {
-      setImagenes([...imagenes, imagenUrl.trim()]);
-      setImagenUrl('');
-    }
-  };
-
-  const handleRemoveImagen = (index) => {
-    setImagenes(imagenes.filter((_, i) => i !== index));
-  };
 
   const fetchPropiedades = async () => {
     try {
-      const response = await fetch(`${API_URL}/propiedades`);
+      const response = await fetch(API_URL);
       const data = await response.json();
       setPropiedades(data);
       setLoading(false);
@@ -105,46 +48,26 @@ function App() {
       descripcion: prop.descripcion,
       precio: prop.precio,
       direccion: prop.direccion,
-      tipo_inmueble: prop.tipo_inmueble,
-      superficie_m2: prop.superficie_m2,
-      canton_id: prop.canton_id,
-      parroquia_id: prop.parroquia_id,
     });
-    if (prop.canton_id) {
-      fetchParroquias(prop.canton_id);
-    }
-    setImagenes(prop.imagenes || []);
     document.getElementById('registro').scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = isEditing ? `${API_URL}/propiedades/${editingId}` : `${API_URL}/propiedades`;
-    const method = isEditing ? 'PATCH' : 'POST';
-
-    const payload = {
-      ...formData,
-      precio: Number(formData.precio),
-      superficie_m2: Number(formData.superficie_m2),
-      canton_id: Number(formData.canton_id),
-      agente_id: AGENTE_ID,
-      imagenes: imagenes.length > 0 ? imagenes : undefined,
-    };
+    const url = isEditing ? `${API_URL}/${editingId}` : API_URL;
+    const method = isEditing ? 'PATCH' : 'POST'; 
 
     try {
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...formData, precio: Number(formData.precio) }),
       });
-
+      
       if (response.ok) {
         fetchPropiedades();
         cancelEdit();
         alert(isEditing ? 'Propiedad actualizada con éxito' : 'Propiedad registrada con éxito');
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + JSON.stringify(errorData));
       }
     } catch (error) {
       alert('Error al conectar con el servidor');
@@ -154,27 +77,15 @@ function App() {
   const cancelEdit = () => {
     setIsEditing(false);
     setEditingId(null);
-    setFormData({
-      titulo: '',
-      descripcion: '',
-      precio: '',
-      direccion: '',
-      tipo_inmueble: '',
-      superficie_m2: '',
-      canton_id: '',
-      parroquia_id: '',
-    });
-    setParroquias([]);
-    setImagenes([]);
-    setImagenUrl('');
+    setFormData({ titulo: '', descripcion: '', precio: '', direccion: '' });
   };
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm('¿Estás seguro de eliminar esta propiedad de la base de datos?')) return;
-
+    
     try {
-      const response = await fetch(`${API_URL}/propiedades/${id}`, {
+      const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
       });
       if (response.ok) {
@@ -185,7 +96,7 @@ function App() {
     }
   };
 
-  const filteredPropiedades = propiedades.filter(prop =>
+  const filteredPropiedades = propiedades.filter(prop => 
     prop.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     prop.direccion.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -206,9 +117,9 @@ function App() {
           <h1>Encuentra la casa de tus sueños</h1>
           <p>Conectamos personas con hogares de forma rápida y segura.</p>
           <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Buscar por ciudad, sector o título..."
+            <input 
+              type="text" 
+              placeholder="Buscar por ciudad, sector o título..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -258,8 +169,8 @@ function App() {
           <div className="form-container">
             <h2>{isEditing ? 'Editar Propiedad' : 'Publicar Nueva Propiedad'}</h2>
             <p>
-              {isEditing
-                ? 'Modifica los datos y guarda los cambios en el servidor.'
+              {isEditing 
+                ? 'Modifica los datos y guarda los cambios en el servidor.' 
                 : 'Completa los datos para subir tu propiedad al servidor.'}
             </p>
             <form onSubmit={handleSubmit} className="styled-form">
@@ -275,20 +186,6 @@ function App() {
               </div>
               <div className="input-row">
                 <div className="input-group">
-                  <label>Tipo de Inmueble</label>
-                  <select
-                    name="tipo_inmueble"
-                    value={formData.tipo_inmueble}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="casa">Casa</option>
-                    <option value="departamento">Departamento</option>
-                    <option value="terreno">Terreno</option>
-                    <option value="local">Local</option>
-                  </select>
-                </div>
-                <div className="input-group">
                   <label>Precio de Venta (USD)</label>
                   <input
                     type="number"
@@ -298,54 +195,12 @@ function App() {
                     required
                   />
                 </div>
-              </div>
-              <div className="input-row">
-                <div className="input-group">
-                  <label>Cantón</label>
-                  <select
-                    name="canton_id"
-                    value={formData.canton_id}
-                    onChange={handleCantonChange}
-                    required
-                  >
-                    <option value="">Seleccionar cantón</option>
-                    {cantones.map(canton => (
-                      <option key={canton.id} value={canton.id}>{canton.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label>Parroquia</label>
-                  <select
-                    name="parroquia_id"
-                    value={formData.parroquia_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar parroquia</option>
-                    {parroquias.map(parroquia => (
-                      <option key={parroquia.id} value={parroquia.id}>{parroquia.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="input-row">
                 <div className="input-group">
                   <label>Ubicación Exacta</label>
                   <input
                     type="text"
                     name="direccion"
                     value={formData.direccion}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="input-group">
-                  <label>Superficie (m²)</label>
-                  <input
-                    type="number"
-                    name="superficie_m2"
-                    value={formData.superficie_m2}
                     onChange={handleInputChange}
                     required
                   />
@@ -360,30 +215,7 @@ function App() {
                   required
                 ></textarea>
               </div>
-
-              <div className="input-group">
-                <label>Imágenes (URLs)</label>
-                <div className="input-row">
-                  <input
-                    type="text"
-                    placeholder="Pegar URL de imagen..."
-                    value={imagenUrl}
-                    onChange={(e) => setImagenUrl(e.target.value)}
-                  />
-                  <button type="button" onClick={handleAddImagen}>Agregar</button>
-                </div>
-                {imagenes.length > 0 && (
-                  <ul className="imagenes-list">
-                    {imagenes.map((url, index) => (
-                      <li key={index}>
-                        <span>{url}</span>
-                        <button type="button" onClick={() => handleRemoveImagen(index)}>X</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
+              
               <div className="form-actions">
                 <button type="submit" className="btn-submit">
                   {isEditing ? 'Actualizar en Servidor' : 'Guardar en Servidor'}
