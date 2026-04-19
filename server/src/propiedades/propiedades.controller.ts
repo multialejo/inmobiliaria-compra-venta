@@ -28,7 +28,7 @@ export class PropiedadesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.propiedadesService.findOne(+id);
+    return this.propiedadesService.findOne(id);
   }
 
   @Patch(':id')
@@ -36,12 +36,12 @@ export class PropiedadesController {
     @Param('id') id: string,
     @Body() updatePropiedadDto: UpdatePropiedadDto,
   ) {
-    return this.propiedadesService.update(+id, updatePropiedadDto);
+    return this.propiedadesService.update(id, updatePropiedadDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.propiedadesService.remove(+id);
+    return this.propiedadesService.remove(id);
   }
 
   @Get('canton/:cantonId')
