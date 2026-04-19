@@ -27,7 +27,7 @@ export enum EstadoPropiedad {
 @Entity('propiedades')
 export class Propiedad {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column({ length: 255 })
   titulo: string;
