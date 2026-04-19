@@ -42,15 +42,18 @@ Desarrollar un sistema de gestión de ventas inmobiliarias enfocado en la provin
  • Crear, editar y eliminar inmuebles ubicados en la provincia 
  • Registrar precio, ubicación (cantón, parroquia), descripción e imágenes 
 
-**Gestión de clientes**
- • Registrar clientes interesados de la región 
- • Guardar información de contacto 
+**Autenticación y autorización**
+ • Registro de usuarios (clientes, agentes, administradores)
+ • Gestión de roles y permisos
+ • Inicio de sesión seguro 
 
 **Búsqueda y filtrado de propiedades locales**
  • Filtrar por precio, ubicación (ej: Guaranda u otros cantones) y tipo de inmueble 
  • Mostrar resultados de forma rápida 
 
-**Registro y seguimiento de ventas**
+**Gestión de clientes y seguimiento de ventas**
+ • Registrar clientes interesados de la región 
+ • Guardar información de contacto
  • Marcar propiedades como disponibles o vendidas 
  • Llevar control del proceso de venta dentro de la provincia
 
