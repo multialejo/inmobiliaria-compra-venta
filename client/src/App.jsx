@@ -16,7 +16,7 @@ function App() {
   const [parroquias, setParroquias] = useState([]);
   const [imagenes, setImagenes] = useState([]);
   const [imagenUrl, setImagenUrl] = useState('');
-  const AGENTE_ID = 'cf257d18-c570-4e0c-b777-fbcc960ab51c';
+  const [currentUser, setCurrentUser] = useState(null);
 
   // TODO(Opción B): Agregar upload de archivos directamente al servidor
   // - Crear endpoint POST /upload en backend con multer
@@ -37,6 +37,7 @@ function App() {
   useEffect(() => {
     fetchPropiedades();
     fetchCantones();
+    fetchUsuarios();
   }, []);
 
   const fetchCantones = async () => {
@@ -92,6 +93,19 @@ function App() {
     }
   };
 
+  const fetchUsuarios = async () => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios`);
+      const usuarios = await response.json();
+      const agente = usuarios.find(u => u.rol === 'agente');
+      if (agente) {
+        setCurrentUser(agente);
+      }
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+    }
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -127,7 +141,7 @@ function App() {
       precio: Number(formData.precio),
       superficie_m2: Number(formData.superficie_m2),
       canton_id: Number(formData.canton_id),
-      agente_id: AGENTE_ID,
+      agente_id: currentUser?.id,
       imagenes: imagenes.length > 0 ? imagenes : undefined,
     };
 
