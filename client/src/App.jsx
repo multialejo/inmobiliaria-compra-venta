@@ -8,6 +8,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProp, setSelectedProp] = useState(null);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -35,27 +39,50 @@ function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleEditClick = (prop, e) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditingId(prop.id);
+    setFormData({
+      titulo: prop.titulo,
+      descripcion: prop.descripcion,
+      precio: prop.precio,
+      direccion: prop.direccion,
+    });
+    document.getElementById('registro').scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const url = isEditing ? `${API_URL}/${editingId}` : API_URL;
+    const method = isEditing ? 'PATCH' : 'POST'; 
+
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, precio: Number(formData.precio) }),
       });
+      
       if (response.ok) {
         fetchPropiedades();
-        setFormData({ titulo: '', descripcion: '', precio: '', direccion: '' });
-        alert('Propiedad registrada con éxito');
+        cancelEdit();
+        alert(isEditing ? 'Propiedad actualizada con éxito' : 'Propiedad registrada con éxito');
       }
     } catch (error) {
       alert('Error al conectar con el servidor');
     }
   };
 
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setFormData({ titulo: '', descripcion: '', precio: '', direccion: '' });
+  };
+
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('¿Estás seguro de eliminar esta propiedad?')) return;
+    if (!window.confirm('¿Estás seguro de eliminar esta propiedad de la base de datos?')) return;
     
     try {
       const response = await fetch(`${API_URL}/${id}`, {
@@ -81,7 +108,7 @@ function App() {
         <nav>
           <a href="#inicio">Inicio</a>
           <a href="#propiedades">Catálogo</a>
-          <a href="#registro">Registrar</a>
+          <a href="#registro">{isEditing ? 'Editar' : 'Registrar'}</a>
         </nav>
       </header>
 
@@ -89,7 +116,6 @@ function App() {
         <div className="hero-content">
           <h1>Encuentra la casa de tus sueños</h1>
           <p>Conectamos personas con hogares de forma rápida y segura.</p>
-          
           <div className="search-bar">
             <input 
               type="text" 
@@ -97,9 +123,6 @@ function App() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button onClick={() => document.getElementById('propiedades').scrollIntoView()}>
-              Buscar
-            </button>
           </div>
         </div>
       </section>
@@ -112,7 +135,7 @@ function App() {
           </div>
 
           {loading ? (
-            <div className="loader">Cargando catálogo...</div>
+            <div className="loader">Cargando catálogo desde el servidor...</div>
           ) : (
             <div className="properties-grid">
               {filteredPropiedades.length > 0 ? (
@@ -125,7 +148,9 @@ function App() {
                       <h3>{prop.titulo}</h3>
                       <p className="location">📍 {prop.direccion}</p>
                       <div className="card-actions">
-                        <button className="btn-outline">Ver Detalles</button>
+                        <button className="btn-outline" onClick={(e) => handleEditClick(prop, e)}>
+                          Editar
+                        </button>
                         <button className="btn-danger" onClick={(e) => handleDelete(prop.id, e)}>
                           Eliminar
                         </button>
@@ -134,7 +159,7 @@ function App() {
                   </div>
                 ))
               ) : (
-                <p className="no-results">No se encontraron propiedades con esa búsqueda.</p>
+                <p className="no-results">No se encontraron propiedades conectadas.</p>
               )}
             </div>
           )}
@@ -142,15 +167,18 @@ function App() {
 
         <section id="registro" className="registration-section">
           <div className="form-container">
-            <h2>Publicar Nueva Propiedad</h2>
-            <p>Completa los datos para subir tu propiedad al servidor.</p>
+            <h2>{isEditing ? 'Editar Propiedad' : 'Publicar Nueva Propiedad'}</h2>
+            <p>
+              {isEditing 
+                ? 'Modifica los datos y guarda los cambios en el servidor.' 
+                : 'Completa los datos para subir tu propiedad al servidor.'}
+            </p>
             <form onSubmit={handleSubmit} className="styled-form">
               <div className="input-group">
                 <label>Nombre de la Propiedad</label>
                 <input
                   type="text"
                   name="titulo"
-                  placeholder="Ej: Departamento céntrico"
                   value={formData.titulo}
                   onChange={handleInputChange}
                   required
@@ -162,7 +190,6 @@ function App() {
                   <input
                     type="number"
                     name="precio"
-                    placeholder="0.00"
                     value={formData.precio}
                     onChange={handleInputChange}
                     required
@@ -173,7 +200,6 @@ function App() {
                   <input
                     type="text"
                     name="direccion"
-                    placeholder="Ciudad, Sector"
                     value={formData.direccion}
                     onChange={handleInputChange}
                     required
@@ -184,19 +210,27 @@ function App() {
                 <label>Descripción Detallada</label>
                 <textarea
                   name="descripcion"
-                  placeholder="Cuéntanos más sobre la propiedad..."
                   value={formData.descripcion}
                   onChange={handleInputChange}
                   required
                 ></textarea>
               </div>
-              <button type="submit" className="btn-submit">Guardar en Base de Datos</button>
+              
+              <div className="form-actions">
+                <button type="submit" className="btn-submit">
+                  {isEditing ? 'Actualizar en Servidor' : 'Guardar en Servidor'}
+                </button>
+                {isEditing && (
+                  <button type="button" className="btn-danger" onClick={cancelEdit}>
+                    Cancelar Edición
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </section>
       </main>
 
-      {/* Modal de Detalles */}
       {selectedProp && (
         <div className="modal-overlay" onClick={() => setSelectedProp(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -210,17 +244,10 @@ function App() {
                 <h4>Descripción:</h4>
                 <p>{selectedProp.descripcion}</p>
               </div>
-              <button className="btn-primary" onClick={() => alert('Función de contacto en desarrollo')}>
-                Contactar Vendedor
-              </button>
             </div>
           </div>
         </div>
       )}
-
-      <footer className="main-footer">
-        <p>&copy; 2026 Mundo Inmobiliario - Sistema Integral de Gestión</p>
-      </footer>
     </div>
   );
 }
