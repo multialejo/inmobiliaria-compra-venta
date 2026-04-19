@@ -32,6 +32,9 @@ export class Propiedad {
   @Column({ length: 255 })
   titulo: string;
 
+  @Column({ length: 255 })
+  direccion: string;
+
   @Column({ type: 'text' })
   descripcion: string;
 

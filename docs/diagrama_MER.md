@@ -27,6 +27,7 @@ erDiagram
     PROPIEDAD {
         int id PK
         string titulo
+        string direccion
         string descripcion
         float precio
         string tipo_inmueble
@@ -82,12 +83,14 @@ erDiagram
 ## Descripción de Entidades y Atributos
 
 ### 1. CANTÓN
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
 | nombre | VARCHAR | Nombre del cantón (Guaranda, Chillanes, etc.) |
 
 ### 2. PARROQUIA
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
@@ -95,6 +98,7 @@ erDiagram
 | canton_id | INT FK | Referencia a Cantón |
 
 ### 3. USUARIO (Agentes y Administradores)
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
@@ -106,10 +110,12 @@ erDiagram
 | fecha_registro | DATE | Fecha de registro en el sistema |
 
 ### 4. PROPIEDAD
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
 | titulo | VARCHAR | Título de la publicación |
+| direccion | VARCHAR | Ubicación exacta |
 | descripcion | TEXT | Descripción detallada |
 | precio | DECIMAL | Precio del inmueble |
 | tipo_inmueble | ENUM | casa, departamento, terreno, local |
@@ -123,6 +129,7 @@ erDiagram
 | fecha_actualizacion | DATE | Última modificación |
 
 ### 5. CLIENTE
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
@@ -134,6 +141,7 @@ erDiagram
 | fecha_registro | DATE | Fecha de registro |
 
 ### 6. VENTA
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
@@ -146,6 +154,7 @@ erDiagram
 | observaciones | TEXT | Notas adicionales |
 
 ### 7. INTERES (Interés de clientes en propiedades)
+
 | Atributo | Tipo | Descripción |
 |----------|------|-------------|
 | id | INT PK | Identificador único |
@@ -163,4 +172,3 @@ erDiagram
 5. **PROPIEDAD → VENTA** (1:1): Cada venta corresponde a una propiedad
 6. **CLIENTE → INTERES** (1:N): Clientes expresan interés en propiedades
 7. **PROPIEDAD → INTERES** (1:N): Propiedades pueden generar múltiples intereses
-

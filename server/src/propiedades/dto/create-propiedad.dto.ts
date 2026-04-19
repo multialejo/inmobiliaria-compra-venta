@@ -13,6 +13,9 @@ export class CreatePropiedadDto {
   titulo: string;
 
   @IsString()
+  direccion: string;
+
+  @IsString()
   descripcion: string;
 
   @IsNumber()
