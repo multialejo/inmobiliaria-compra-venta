@@ -10,6 +10,7 @@ import { SeedModule } from './seed/seed.module';
 import { CantonesModule } from './cantones/cantones.module';
 import { ParroquiasModule } from './parroquias/parroquias.module';
 import { PropiedadesModule } from './propiedades/propiedades.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PropiedadesModule } from './propiedades/propiedades.module';
     CantonesModule,
     ParroquiasModule,
     PropiedadesModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
