@@ -144,6 +144,18 @@ nav a:hover { color: var(--primary); }
 
 .no-results { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #64748b; }
 
+.user-info {
+  margin-left: 2rem; font-size: 0.85rem; color: var(--primary); font-weight: 600;
+}
+
+.btn-logout {
+  margin-left: 1rem; padding: 0.5rem 1rem; background: transparent;
+  border: 1px solid #ef4444; color: #ef4444; border-radius: 6px;
+  cursor: pointer; font-weight: 600; font-size: 0.85rem;
+}
+
+.btn-logout:hover { background: #ef4444; color: white; }
+
 @media (max-width: 768px) {
   .modal-content { grid-template-columns: 1fr; }
   .modal-image { min-height: 200px; }

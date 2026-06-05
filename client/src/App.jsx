@@ -17,11 +17,11 @@ function App() {
   const [imagenes, setImagenes] = useState([]);
   const [imagenUrl, setImagenUrl] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || null);
 
-  // TODO(Opción B): Agregar upload de archivos directamente al servidor
-  // - Crear endpoint POST /upload en backend con multer
-  // - Agregar input type="file" múltiples
-  // - Subir imagenes a Cloudinary/S3 y guardar URLs
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -34,11 +34,45 @@ function App() {
     parroquia_id: '',
   });
 
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   useEffect(() => {
-    fetchPropiedades();
-    fetchCantones();
-    fetchUsuarios();
-  }, []);
+    if (token) {
+      fetchCantones();
+      fetchPropiedades();
+    }
+  }, [token]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, contrasena: loginPassword }),
+      });
+      if (!response.ok) {
+        throw new Error('Credenciales inválidas');
+      }
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      setToken(data.access_token);
+      setCurrentUser(data.usuario);
+    } catch (error) {
+      setLoginError(error.message);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setCurrentUser(null);
+    setPropiedades([]);
+  };
 
   const fetchCantones = async () => {
     try {
@@ -83,26 +117,15 @@ function App() {
 
   const fetchPropiedades = async () => {
     try {
-      const response = await fetch(`${API_URL}/propiedades`);
+      const response = await fetch(`${API_URL}/propiedades`, {
+        headers: authHeaders,
+      });
       const data = await response.json();
       setPropiedades(data);
       setLoading(false);
     } catch (error) {
       console.error('Error al obtener propiedades:', error);
       setLoading(false);
-    }
-  };
-
-  const fetchUsuarios = async () => {
-    try {
-      const response = await fetch(`${API_URL}/usuarios`);
-      const usuarios = await response.json();
-      const agente = usuarios.find(u => u.rol === 'agente');
-      if (agente) {
-        setCurrentUser(agente);
-      }
-    } catch (error) {
-      console.error('Error al obtener usuarios:', error);
     }
   };
 
@@ -148,7 +171,7 @@ function App() {
     try {
       const response = await fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -190,6 +213,7 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/propiedades/${id}`, {
         method: 'DELETE',
+        headers: authHeaders,
       });
       if (response.ok) {
         fetchPropiedades();
@@ -204,6 +228,51 @@ function App() {
     prop.direccion.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (!token) {
+    return (
+      <div className="app-wrapper">
+        <header className="navbar">
+          <div className="logo">Mundo <span>Inmobiliario</span></div>
+        </header>
+        <section className="hero">
+          <div className="hero-content">
+            <h1>Inicia Sesión</h1>
+            <p>Ingresa con tus credenciales para acceder al sistema.</p>
+          </div>
+        </section>
+        <main className="container">
+          <section className="registration-section">
+            <div className="form-container" style={{ maxWidth: '400px', margin: '0 auto' }}>
+              <h2>Acceso al Sistema</h2>
+              <form onSubmit={handleLogin} className="styled-form">
+                <div className="input-group">
+                  <label>Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Contraseña</label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {loginError && <p style={{ color: 'red' }}>{loginError}</p>}
+                <button type="submit" className="btn-submit">Ingresar</button>
+              </form>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-wrapper">
       <header className="navbar">
@@ -212,6 +281,10 @@ function App() {
           <a href="#inicio">Inicio</a>
           <a href="#propiedades">Catálogo</a>
           <a href="#registro">{isEditing ? 'Editar' : 'Registrar'}</a>
+          <span className="user-info">
+            {currentUser?.nombre} ({currentUser?.rol})
+          </span>
+          <button className="btn-logout" onClick={handleLogout}>Salir</button>
         </nav>
       </header>
 
@@ -249,14 +322,16 @@ function App() {
                     </div>
                     <div className="card-info">
                       <h3>{prop.titulo}</h3>
-                      <p className="location">📍 {prop.direccion}</p>
+                      <p className="location">{prop.direccion}</p>
                       <div className="card-actions">
                         <button className="btn-outline" onClick={(e) => handleEditClick(prop, e)}>
                           Editar
                         </button>
-                        <button className="btn-danger" onClick={(e) => handleDelete(prop.id, e)}>
-                          Eliminar
-                        </button>
+                        {currentUser?.rol === 'administrador' && (
+                          <button className="btn-danger" onClick={(e) => handleDelete(prop.id, e)}>
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -421,7 +496,7 @@ function App() {
             <div className="modal-body">
               <h2>{selectedProp.titulo}</h2>
               <h3 className="modal-price">${selectedProp.precio.toLocaleString()}</h3>
-              <p className="modal-location">📍 {selectedProp.direccion}</p>
+              <p className="modal-location">{selectedProp.direccion}</p>
               <div className="modal-desc">
                 <h4>Descripción:</h4>
                 <p>{selectedProp.descripcion}</p>

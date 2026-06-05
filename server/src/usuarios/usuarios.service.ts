@@ -22,4 +22,22 @@ export class UsuariosService {
       },
     });
   }
+
+  findById(id: string) {
+    return this.usuarioRepository.findOne({
+      where: { id },
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        rol: true,
+        fecha_registro: true,
+      },
+    });
+  }
+
+  findByEmail(email: string) {
+    return this.usuarioRepository.findOne({ where: { email } });
+  }
 }

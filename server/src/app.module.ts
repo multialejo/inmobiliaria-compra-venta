@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Canton } from './cantones/entities/canton.entity';
@@ -11,26 +14,44 @@ import { CantonesModule } from './cantones/cantones.module';
 import { ParroquiasModule } from './parroquias/parroquias.module';
 import { PropiedadesModule } from './propiedades/propiedades.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'admin',
-      password: 'admin123',
-      database: 'inmobiliaria',
-      entities: [Canton, Parroquia, Usuario, Propiedad],
-      synchronize: true,
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'mysql',
+        host: config.get<string>('DB_HOST', 'localhost'),
+        port: config.get<number>('DB_PORT', 3306),
+        username: config.get<string>('DB_USERNAME', 'admin'),
+        password: config.get<string>('DB_PASSWORD', 'admin123'),
+        database: config.get<string>('DB_DATABASE', 'inmobiliaria'),
+        entities: [Canton, Parroquia, Usuario, Propiedad],
+        synchronize: true,
+      }),
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     SeedModule,
     CantonesModule,
     ParroquiasModule,
     PropiedadesModule,
     UsuariosModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Propiedad } from './entities/propiedad.entity';
@@ -10,7 +14,7 @@ export class PropiedadesService {
   constructor(
     @InjectRepository(Propiedad)
     private propiedadRepository: Repository<Propiedad>,
-  ) { }
+  ) {}
 
   create(createPropiedadDto: CreatePropiedadDto) {
     const propiedad = this.propiedadRepository.create(createPropiedadDto);
@@ -34,8 +38,17 @@ export class PropiedadesService {
     return propiedad;
   }
 
-  async update(id: string, updatePropiedadDto: UpdatePropiedadDto) {
+  async update(
+    id: string,
+    updatePropiedadDto: UpdatePropiedadDto,
+    user: { id: string; rol: string },
+  ) {
     const propiedad = await this.findOne(id);
+    if (user.rol === 'agente' && propiedad.agente_id !== user.id) {
+      throw new ForbiddenException(
+        'No puedes editar propiedades de otros agentes',
+      );
+    }
     Object.assign(propiedad, updatePropiedadDto);
     return this.propiedadRepository.save(propiedad);
   }
