@@ -67,7 +67,7 @@ export class Propiedad {
   @JoinColumn({ name: 'canton_id' })
   canton: Canton;
 
-  @Column({ name: 'parroquia_id' })
+  @Column({ name: 'parroquia_id', nullable: true })
   parroquia_id: number;
 
   @ManyToOne(() => Parroquia, (p) => p.propiedades)
