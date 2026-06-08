@@ -26,10 +26,6 @@ function App() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [registerData, setRegisterData] = useState({
-    nombre: '', email: '', contrasena: '', telefono: '', rol: 'agente',
-  });
 
   const [imagenes, setImagenes] = useState([]);
 
@@ -112,27 +108,6 @@ function App() {
       setCurrentUser(data.usuario);
     } catch (error) {
       setLoginError(error.message);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al registrarse');
-      }
-      const data = await response.json();
-      localStorage.setItem('token', data.access_token);
-      setToken(data.access_token);
-      setCurrentUser(data.usuario);
-    } catch (error) {
-      alert(error.message);
     }
   };
 
@@ -309,69 +284,23 @@ function App() {
         </header>
         <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
           <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
-            </h2>
-            <p className="text-gray-500 text-sm text-center mb-6">
-              {isRegistering ? 'Regístrate para acceder al sistema' : 'Ingresa con tus credenciales'}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Iniciar Sesión</h2>
+            <p className="text-gray-500 text-sm text-center mb-6">Ingresa con tus credenciales</p>
 
-            {isRegistering ? (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                  <input type="text" value={registerData.nombre} onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                  <input type="password" value={registerData.contrasena} onChange={(e) => setRegisterData({ ...registerData, contrasena: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                  <input type="text" value={registerData.telefono} onChange={(e) => setRegisterData({ ...registerData, telefono: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                  <select value={registerData.rol} onChange={(e) => setRegisterData({ ...registerData, rol: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="agente">Agente</option>
-                    <option value="administrador">Administrador</option>
-                  </select>
-                </div>
-                <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">Crear Cuenta</button>
-                <p className="text-center text-sm text-gray-500">
-                  ¿Ya tienes cuenta?{' '}
-                  <a href="#" onClick={(e) => { e.preventDefault(); setIsRegistering(false); }} className="text-blue-600 hover:underline">Inicia sesión</a>
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                  <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
-                </div>
-                {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
-                <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">Ingresar</button>
-                <p className="text-center text-sm text-gray-500">
-                  ¿No tienes cuenta?{' '}
-                  <a href="#" onClick={(e) => { e.preventDefault(); setIsRegistering(true); }} className="text-blue-600 hover:underline">Regístrate</a>
-                </p>
-              </form>
-            )}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+              </div>
+              {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">Ingresar</button>
+            </form>
           </div>
         </div>
       </div>
