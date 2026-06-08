@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { Canton } from '../cantones/entities/canton.entity';
 import { Parroquia } from '../parroquias/entities/parroquia.entity';
 import { Usuario, RolUsuario } from '../usuarios/entities/usuario.entity';
@@ -58,11 +57,10 @@ export class SeedService implements OnModuleInit {
 
   async seedUsuarios() {
     for (const usuario of usuariosData) {
-      const hashedPassword = await bcrypt.hash(usuario.contrasena, 10);
       const newUsuario = this.usuarioRepository.create({
         nombre: usuario.nombre,
         email: usuario.email,
-        contrasena: hashedPassword,
+        contrasena: usuario.contrasena,
         telefono: usuario.telefono,
         rol:
           usuario.rol === 'administrador'

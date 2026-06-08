@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   OneToMany,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { Propiedad } from '../../propiedades/entities/propiedad.entity';
 
 export enum RolUsuario {
@@ -34,6 +37,14 @@ export class Usuario {
 
   @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashContrasena() {
+    if (this.contrasena && !this.contrasena.startsWith('$2')) {
+      this.contrasena = await bcrypt.hash(this.contrasena, 10);
+    }
+  }
 
   @OneToMany(() => Propiedad, (propiedad) => propiedad.agente)
   propiedades: Propiedad[];
