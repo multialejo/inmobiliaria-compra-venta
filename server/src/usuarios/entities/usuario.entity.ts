@@ -9,8 +9,10 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Propiedad } from '../../propiedades/entities/propiedad.entity';
+import { Interes } from '../../intereses/entities/interes.entity';
 
 export enum RolUsuario {
+  CLIENTE = 'cliente',
   AGENTE = 'agente',
   ADMINISTRADOR = 'administrador',
 }
@@ -32,6 +34,12 @@ export class Usuario {
   @Column({ length: 20, nullable: true })
   telefono: string;
 
+  @Column({ length: 20, nullable: true })
+  cedula: string;
+
+  @Column({ length: 255, nullable: true })
+  direccion: string;
+
   @Column({ type: 'enum', enum: RolUsuario })
   rol: RolUsuario;
 
@@ -48,4 +56,7 @@ export class Usuario {
 
   @OneToMany(() => Propiedad, (propiedad) => propiedad.agente)
   propiedades: Propiedad[];
+
+  @OneToMany(() => Interes, (interes) => interes.cliente)
+  intereses: Interes[];
 }

@@ -34,7 +34,7 @@ export class PropiedadesController {
   }
 
   @Get()
-  @Roles('administrador', 'agente')
+  @Roles('administrador', 'agente', 'cliente')
   findAll(@CurrentUser() user: { id: string; rol: string }) {
     if (user.rol === 'agente') {
       return this.propiedadesService.findByAgente(user.id);
@@ -43,7 +43,7 @@ export class PropiedadesController {
   }
 
   @Get(':id')
-  @Roles('administrador', 'agente')
+  @Roles('administrador', 'agente', 'cliente')
   findOne(@Param('id') id: string) {
     return this.propiedadesService.findOne(id);
   }
@@ -65,13 +65,13 @@ export class PropiedadesController {
   }
 
   @Get('canton/:cantonId')
-  @Roles('administrador', 'agente')
+  @Roles('administrador', 'agente', 'cliente')
   findByCanton(@Param('cantonId') cantonId: string) {
     return this.propiedadesService.findByCanton(+cantonId);
   }
 
   @Get('parroquia/:parroquiaId')
-  @Roles('administrador', 'agente')
+  @Roles('administrador', 'agente', 'cliente')
   findByParroquia(@Param('parroquiaId') parroquiaId: string) {
     return this.propiedadesService.findByParroquia(+parroquiaId);
   }

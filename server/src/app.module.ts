@@ -9,12 +9,15 @@ import { Canton } from './cantones/entities/canton.entity';
 import { Parroquia } from './parroquias/entities/parroquia.entity';
 import { Usuario } from './usuarios/entities/usuario.entity';
 import { Propiedad } from './propiedades/entities/propiedad.entity';
+import { Interes } from './intereses/entities/interes.entity';
 import { SeedModule } from './seed/seed.module';
 import { CantonesModule } from './cantones/cantones.module';
 import { ParroquiasModule } from './parroquias/parroquias.module';
 import { PropiedadesModule } from './propiedades/propiedades.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
+import { ClientesModule } from './clientes/clientes.module';
+import { InteresesModule } from './intereses/intereses.module';
 
 @Module({
   imports: [
@@ -28,7 +31,7 @@ import { AuthModule } from './auth/auth.module';
         username: config.get<string>('DB_USERNAME', 'admin'),
         password: config.get<string>('DB_PASSWORD', 'admin123'),
         database: config.get<string>('DB_DATABASE', 'inmobiliaria'),
-        entities: [Canton, Parroquia, Usuario, Propiedad],
+        entities: [Canton, Parroquia, Usuario, Propiedad, Interes],
         synchronize: true,
       }),
     }),
@@ -44,6 +47,8 @@ import { AuthModule } from './auth/auth.module';
     PropiedadesModule,
     UsuariosModule,
     AuthModule,
+    ClientesModule,
+    InteresesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -62,10 +62,14 @@ export class SeedService implements OnModuleInit {
         email: usuario.email,
         contrasena: usuario.contrasena,
         telefono: usuario.telefono,
+        cedula: usuario.cedula,
+        direccion: usuario.direccion,
         rol:
           usuario.rol === 'administrador'
             ? RolUsuario.ADMINISTRADOR
-            : RolUsuario.AGENTE,
+            : usuario.rol === 'cliente'
+              ? RolUsuario.CLIENTE
+              : RolUsuario.AGENTE,
       });
       await this.usuarioRepository.save(newUsuario);
     }

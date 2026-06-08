@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Canton } from '../../cantones/entities/canton.entity';
 import { Parroquia } from '../../parroquias/entities/parroquia.entity';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
+import { Interes } from '../../intereses/entities/interes.entity';
 
 export enum TipoInmueble {
   CASA = 'casa',
@@ -80,6 +82,9 @@ export class Propiedad {
   @ManyToOne(() => Usuario, (usuario) => usuario.propiedades)
   @JoinColumn({ name: 'agente_id' })
   agente: Usuario;
+
+  @OneToMany(() => Interes, (interes) => interes.propiedad)
+  intereses: Interes[];
 
   @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;

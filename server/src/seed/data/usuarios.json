@@ -19,5 +19,23 @@
     "contrasena": "agente123",
     "telefono": "0977777777",
     "rol": "agente"
+  },
+  {
+    "nombre": "Cliente Uno",
+    "email": "cliente1@inmobiliaria.com",
+    "contrasena": "cliente123",
+    "telefono": "0966666666",
+    "cedula": "0201234567",
+    "direccion": "Guaranda, Bolívar",
+    "rol": "cliente"
+  },
+  {
+    "nombre": "Cliente Dos",
+    "email": "cliente2@inmobiliaria.com",
+    "contrasena": "cliente123",
+    "telefono": "0955555555",
+    "cedula": "0207654321",
+    "direccion": "San Miguel, Bolívar",
+    "rol": "cliente"
   }
 ]
