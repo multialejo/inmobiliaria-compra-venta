@@ -23,6 +23,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import './CatalogPage.css';
+import ToastContainer, { useToast } from '../Toast';
 
 const API_URL = 'http://localhost:3000/api';
 const PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350"><rect fill="#eff6ff" width="500" height="350"/><text fill="#3b82f6" font-family="sans-serif" font-size="18" x="50%" y="50%" text-anchor="middle" dy=".3em">Cargando...</text></svg>');
@@ -70,6 +71,7 @@ const MOCK_PARROQUIAS = {
 };
 
 export default function CatalogPage({ currentUser, token, setToken, setCurrentUser, onNavigateToDashboard }) {
+  const { toasts, showToast, removeToast } = useToast();
   const [propiedades, setPropiedades] = useState([]);
   const [cantones, setCantones] = useState(MOCK_CANTONES);
   const [parroquias, setParroquias] = useState([]);
@@ -391,7 +393,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
   const handleEnviarSolicitud = async (e) => {
     if (e) e.preventDefault();
     if (!solicitudExperiencia.trim() || !solicitudMotivo.trim()) {
-      alert('Por favor complete los datos obligatorios (Experiencia y Motivo de postulación).');
+      showToast('Por favor complete los datos obligatorios (Experiencia y Motivo de postulación).', 'error');
       return;
     }
     try {
@@ -416,13 +418,13 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           motivoAgente: solicitudMotivo
         });
         setShowSolicitudModal(false);
-        alert('Solicitud de privilegios de Agente enviada al Administrador con éxito.');
+        showToast('Solicitud de privilegios de Agente enviada al Administrador con éxito.', 'success');
       } else {
-        alert('Hubo un error al procesar la solicitud.');
+        showToast('Hubo un error al procesar la solicitud.', 'error');
       }
     } catch (error) {
       console.warn('Failed to submit agent request:', error);
-      alert('Error de conexión.');
+      showToast('Error de conexión.', 'error');
     }
   };
 
@@ -508,7 +510,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                   </button>
                 )}
                 
-                <button onClick={handleLogout} className="text-red-500 hover:text-red-700 transition" title="Cerrar Sesión">
+                <button onClick={handleLogout} className="text-red-500 hover:text-red-700 transition" title="Cerrar Sesión" aria-label="Cerrar sesión">
                   <LogOut className="w-4.5 h-4.5" />
                 </button>
               </div>
@@ -546,15 +548,16 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           <div className="hero-search-container">
             <div className="search-input-wrapper">
               <Search className="search-icon text-blue-600" />
-              <input 
-                type="text" 
-                placeholder="Busca por palabra clave, título o dirección..." 
+              <input
+                type="text"
+                placeholder="Busca por palabra clave, título o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="hero-search-input"
+                aria-label="Buscar propiedades"
               />
               {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="clear-search-btn">
+                <button onClick={() => setSearchTerm('')} className="clear-search-btn" aria-label="Limpiar búsqueda">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -577,9 +580,10 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
             
             {/* Canton */}
             <div className="filter-group">
-              <label className="filter-label">Cantón</label>
-              <select 
-                value={selectedCanton} 
+              <label className="filter-label" htmlFor="filter-canton">Cantón</label>
+              <select
+                id="filter-canton"
+                value={selectedCanton}
                 onChange={(e) => setSelectedCanton(e.target.value)}
                 className="filter-select"
               >
@@ -592,9 +596,10 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
             {/* Parroquia */}
             <div className="filter-group">
-              <label className="filter-label">Parroquia</label>
-              <select 
-                value={selectedParroquia} 
+              <label className="filter-label" htmlFor="filter-parroquia">Parroquia</label>
+              <select
+                id="filter-parroquia"
+                value={selectedParroquia}
                 onChange={(e) => setSelectedParroquia(e.target.value)}
                 className="filter-select"
                 disabled={!selectedCanton}
@@ -608,9 +613,10 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
             {/* Tipo */}
             <div className="filter-group">
-              <label className="filter-label">Tipo de Inmueble</label>
-              <select 
-                value={selectedTipo} 
+              <label className="filter-label" htmlFor="filter-tipo">Tipo de Inmueble</label>
+              <select
+                id="filter-tipo"
+                value={selectedTipo}
                 onChange={(e) => setSelectedTipo(e.target.value)}
                 className="filter-select"
               >
@@ -624,13 +630,14 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
             {/* Precio */}
             <div className="filter-group">
-              <label className="filter-label">Precio Máximo</label>
+              <label className="filter-label" htmlFor="filter-price">Precio Máximo</label>
               <div className="price-input-wrapper">
                 <span className="price-currency">$</span>
-                <input 
-                  type="number" 
-                  placeholder="Cualquier precio" 
-                  value={maxPrice} 
+                <input
+                  id="filter-price"
+                  type="number"
+                  placeholder="Cualquier precio"
+                  value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                   className="filter-input-price"
                 />
@@ -639,9 +646,10 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
             {/* Orden */}
             <div className="filter-group">
-              <label className="filter-label">Ordenar por</label>
-              <select 
-                value={sortBy} 
+              <label className="filter-label" htmlFor="filter-sort">Ordenar por</label>
+              <select
+                id="filter-sort"
+                value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="filter-select"
               >
@@ -683,8 +691,8 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           </div>
 
           {loading ? (
-            <div className="loading-container py-20 text-center">
-              <div className="spinner mb-4"></div>
+            <div className="loading-container py-20 text-center" role="status" aria-live="polite">
+              <div className="spinner mb-4" aria-hidden="true"></div>
               <p className="text-slate-500 font-medium">Buscando en la base de datos...</p>
             </div>
           ) : sortedPropiedades.length > 0 ? (
@@ -777,10 +785,17 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
       {/* PROPERTY DETAILS MODAL */}
       {selectedProp && (
-        <div className="modal-backdrop fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedProp(null)}>
+        <div
+          className="modal-backdrop fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedProp(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="catalog-modal-title"
+          onKeyDown={(e) => { if (e.key === 'Escape') setSelectedProp(null); }}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             
-            <button onClick={() => setSelectedProp(null)} className="modal-close-btn">
+            <button onClick={() => setSelectedProp(null)} className="modal-close-btn" aria-label="Cerrar detalle">
               <X className="w-5 h-5 text-slate-600" />
             </button>
 
@@ -799,19 +814,21 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                     
                     {selectedProp.imagenes.length > 1 && (
                       <>
-                        <button onClick={(e) => handlePrevImage(e, selectedProp.imagenes)} className="slider-nav-btn slider-prev-btn">
+                        <button onClick={(e) => handlePrevImage(e, selectedProp.imagenes)} className="slider-nav-btn slider-prev-btn" aria-label="Imagen anterior">
                           <ChevronLeft className="w-5 h-5 text-slate-800" />
                         </button>
-                        <button onClick={(e) => handleNextImage(e, selectedProp.imagenes)} className="slider-nav-btn slider-next-btn">
+                        <button onClick={(e) => handleNextImage(e, selectedProp.imagenes)} className="slider-nav-btn slider-next-btn" aria-label="Imagen siguiente">
                           <ChevronRight className="w-5 h-5 text-slate-800" />
                         </button>
 
                         <div className="slider-indicators">
                           {selectedProp.imagenes.map((_, idx) => (
-                            <span 
-                              key={idx} 
+                            <span
+                              key={idx}
                               className={`indicator-dot ${idx === activeImageIdx ? 'active' : ''}`}
                               onClick={() => setActiveImageIdx(idx)}
+                              role="button"
+                              aria-label={`Ir a imagen ${idx + 1}`}
                             ></span>
                           ))}
                         </div>
@@ -842,7 +859,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                     </div>
                   </div>
 
-                  <h3 className="modal-title text-2xl font-black text-slate-900 mb-4 leading-tight">
+                  <h3 className="modal-title text-2xl font-black text-slate-900 mb-4 leading-tight" id="catalog-modal-title">
                     {selectedProp.titulo}
                   </h3>
 
@@ -965,137 +982,158 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
       {/* LOGIN/REGISTER MODAL (CLIENT SIDE FLOW) */}
       {showAuthModal && (
-        <div className="modal-backdrop fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowAuthModal(false)}>
+        <div
+          className="modal-backdrop fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowAuthModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-modal-title"
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowAuthModal(false); }}
+        >
           <div className="auth-modal-content bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setShowAuthModal(false)} className="modal-close-btn">
+            <button onClick={() => setShowAuthModal(false)} className="modal-close-btn" aria-label="Cerrar">
               <X className="w-5 h-5 text-slate-500" />
             </button>
 
-            <div className="auth-tabs flex border-b border-slate-100 mb-6">
+            <div className="auth-tabs flex border-b border-slate-100 mb-6" role="tablist">
               <button 
                 onClick={() => { setAuthTab('login'); setAuthError(''); }} 
                 className={`auth-tab-btn flex-1 py-3 text-center text-sm font-bold transition ${authTab === 'login' ? 'active-tab' : 'text-slate-400'}`}
+                role="tab"
+                aria-selected={authTab === 'login'}
+                aria-controls="auth-login-panel"
               >
                 Iniciar Sesión
               </button>
               <button 
                 onClick={() => { setAuthTab('register'); setRegError(''); }} 
                 className={`auth-tab-btn flex-1 py-3 text-center text-sm font-bold transition ${authTab === 'register' ? 'active-tab' : 'text-slate-400'}`}
+                role="tab"
+                aria-selected={authTab === 'register'}
+                aria-controls="auth-register-panel"
               >
                 Crear Cuenta
               </button>
             </div>
 
             {authTab === 'login' ? (
-              <form onSubmit={handleAuthLoginSubmit} className="space-y-4">
-                <h3 className="text-xl font-black text-slate-900 mb-2">Ingresa a tu cuenta</h3>
+              <form onSubmit={handleAuthLoginSubmit} className="space-y-4" id="auth-login-panel" role="tabpanel">
+                <h3 className="text-xl font-black text-slate-900 mb-2" id="auth-modal-title">Ingresa a tu cuenta</h3>
                 <p className="text-slate-500 text-xs mb-4">Inicia sesión para registrar tu interés en comprar este inmueble.</p>
                 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    value={authEmail} 
-                    onChange={(e) => setAuthEmail(e.target.value)} 
-                    className="input-custom" 
-                    required 
+                  <label className="input-label-custom" htmlFor="auth-email">Correo Electrónico</label>
+                  <input
+                    id="auth-email"
+                    type="email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    className="input-custom"
+                    required
                     placeholder="ejemplo@correo.com"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Contraseña</label>
-                  <input 
-                    type="password" 
-                    value={authPassword} 
-                    onChange={(e) => setAuthPassword(e.target.value)} 
-                    className="input-custom" 
-                    required 
+                  <label className="input-label-custom" htmlFor="auth-password">Contraseña</label>
+                  <input
+                    id="auth-password"
+                    type="password"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="input-custom"
+                    required
                     placeholder="••••••••"
                   />
                 </div>
 
-                {authError && <div className="error-alert">{authError}</div>}
+                {authError && <div className="error-alert" role="alert">{authError}</div>}
 
                 <button type="submit" className="btn-auth-submit">
                   Ingresar y Continuar Compra
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleAuthRegisterSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <form onSubmit={handleAuthRegisterSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" id="auth-register-panel" role="tabpanel">
                 <h3 className="text-xl font-black text-slate-900 mb-2">Regístrate como Cliente</h3>
                 <p className="text-slate-500 text-xs mb-4">Crea una cuenta rápida y formaliza tu interés en adquirir propiedades.</p>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    value={regNombre} 
-                    onChange={(e) => setRegNombre(e.target.value)} 
-                    className="input-custom" 
-                    required 
+                  <label className="input-label-custom" htmlFor="reg-nombre">Nombre Completo</label>
+                  <input
+                    id="reg-nombre"
+                    type="text"
+                    value={regNombre}
+                    onChange={(e) => setRegNombre(e.target.value)}
+                    className="input-custom"
+                    required
                     placeholder="Juan Pérez"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    value={regEmail} 
-                    onChange={(e) => setRegEmail(e.target.value)} 
-                    className="input-custom" 
-                    required 
+                  <label className="input-label-custom" htmlFor="reg-email">Correo Electrónico</label>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    className="input-custom"
+                    required
                     placeholder="juan@correo.com"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Contraseña (mínimo 6 caracteres)</label>
-                  <input 
-                    type="password" 
-                    value={regPassword} 
-                    onChange={(e) => setRegPassword(e.target.value)} 
-                    className="input-custom" 
-                    required 
+                  <label className="input-label-custom" htmlFor="reg-password">Contraseña (mínimo 6 caracteres)</label>
+                  <input
+                    id="reg-password"
+                    type="password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    className="input-custom"
+                    required
                     placeholder="••••••••"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Teléfono (opcional)</label>
-                  <input 
-                    type="text" 
-                    value={regTelefono} 
-                    onChange={(e) => setRegTelefono(e.target.value)} 
-                    className="input-custom" 
+                  <label className="input-label-custom" htmlFor="reg-telefono">Teléfono (opcional)</label>
+                  <input
+                    id="reg-telefono"
+                    type="text"
+                    value={regTelefono}
+                    onChange={(e) => setRegTelefono(e.target.value)}
+                    className="input-custom"
                     placeholder="0999999999"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Cédula (opcional)</label>
-                  <input 
-                    type="text" 
-                    value={regCedula} 
-                    onChange={(e) => setRegCedula(e.target.value)} 
-                    className="input-custom" 
+                  <label className="input-label-custom" htmlFor="reg-cedula">Cédula (opcional)</label>
+                  <input
+                    id="reg-cedula"
+                    type="text"
+                    value={regCedula}
+                    onChange={(e) => setRegCedula(e.target.value)}
+                    className="input-custom"
                     placeholder="0201234567"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom">Dirección (opcional)</label>
-                  <input 
-                    type="text" 
-                    value={regDireccion} 
-                    onChange={(e) => setRegDireccion(e.target.value)} 
-                    className="input-custom" 
+                  <label className="input-label-custom" htmlFor="reg-direccion">Dirección (opcional)</label>
+                  <input
+                    id="reg-direccion"
+                    type="text"
+                    value={regDireccion}
+                    onChange={(e) => setRegDireccion(e.target.value)}
+                    className="input-custom"
                     placeholder="Guaranda, Bolívar"
                   />
                 </div>
 
-                {regError && <div className="error-alert">{regError}</div>}
+                {regError && <div className="error-alert" role="alert">{regError}</div>}
 
                 <button type="submit" className="btn-auth-submit">
                   Registrarse y Comprar Inmueble
@@ -1108,47 +1146,57 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
       {/* SOLICITUD AGENTE MODAL */}
       {showSolicitudModal && (
-        <div className="modal-backdrop fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowSolicitudModal(false)}>
+        <div
+          className="modal-backdrop fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowSolicitudModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="solicitud-modal-title"
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowSolicitudModal(false); }}
+        >
           <div className="auth-modal-content bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setShowSolicitudModal(false)} className="modal-close-btn">
+            <button onClick={() => setShowSolicitudModal(false)} className="modal-close-btn" aria-label="Cerrar">
               <X className="w-5 h-5 text-slate-500" />
             </button>
 
             <form onSubmit={handleEnviarSolicitud} className="space-y-4">
-              <h3 className="text-xl font-black text-slate-900 mb-2">Solicitar ser Agente</h3>
+              <h3 className="text-xl font-black text-slate-900 mb-2" id="solicitud-modal-title">Solicitar ser Agente</h3>
               <p className="text-slate-500 text-xs mb-4">
                 Para postularte como agente de ventas, ingresa los siguientes datos importantes sobre tu perfil profesional. Tu información personal registrada ya será enviada al administrador.
               </p>
               
               <div className="form-group-custom">
-                <label className="input-label-custom">Experiencia Laboral (Años o descripción)</label>
-                <textarea 
-                  value={solicitudExperiencia} 
-                  onChange={(e) => setSolicitudExperiencia(e.target.value)} 
-                  className="input-custom min-h-[60px] resize-none" 
-                  required 
+                <label className="input-label-custom" htmlFor="sol-experiencia">Experiencia Laboral (Años o descripción)</label>
+                <textarea
+                  id="sol-experiencia"
+                  value={solicitudExperiencia}
+                  onChange={(e) => setSolicitudExperiencia(e.target.value)}
+                  className="input-custom min-h-[60px] resize-none"
+                  required
                   placeholder="Ej: 3 años en ventas de terrenos, o agente independiente..."
                 />
               </div>
 
               <div className="form-group-custom">
-                <label className="input-label-custom">Registro / Nro Licencia Corredor (Opcional)</label>
-                <input 
-                  type="text" 
-                  value={solicitudLicencia} 
-                  onChange={(e) => setSolicitudLicencia(e.target.value)} 
-                  className="input-custom" 
+                <label className="input-label-custom" htmlFor="sol-licencia">Registro / Nro Licencia Corredor (Opcional)</label>
+                <input
+                  id="sol-licencia"
+                  type="text"
+                  value={solicitudLicencia}
+                  onChange={(e) => setSolicitudLicencia(e.target.value)}
+                  className="input-custom"
                   placeholder="Ej: L-384920"
                 />
               </div>
 
               <div className="form-group-custom">
-                <label className="input-label-custom">Motivo de postulación</label>
-                <textarea 
-                  value={solicitudMotivo} 
-                  onChange={(e) => setSolicitudMotivo(e.target.value)} 
-                  className="input-custom min-h-[60px] resize-none" 
-                  required 
+                <label className="input-label-custom" htmlFor="sol-motivo">Motivo de postulación</label>
+                <textarea
+                  id="sol-motivo"
+                  value={solicitudMotivo}
+                  onChange={(e) => setSolicitudMotivo(e.target.value)}
+                  className="input-custom min-h-[60px] resize-none"
+                  required
                   placeholder="¿Por qué deseas trabajar como agente en la plataforma?"
                 />
               </div>
@@ -1168,6 +1216,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           <p className="text-slate-500 text-xs mt-2 font-medium">Guaranda - San Miguel - Chimbo - Chillanes - Echeandía - Caluma - Las Naves</p>
         </div>
       </footer>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

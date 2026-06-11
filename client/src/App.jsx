@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, MapPin, DollarSign, Bed, Bath, Maximize2, Search, ChevronDown, Menu, LogOut, User } from 'lucide-react';
 import './App.css';
 import CatalogPage from './components/CatalogPage/CatalogPage';
+import ToastContainer, { useToast } from './components/Toast';
+import ConfirmDialog from './components/ConfirmDialog';
 
 const API_URL = 'http://localhost:3000/api';
 
@@ -59,6 +61,8 @@ function App() {
   };
 
   const [usuarios, setUsuarios] = useState([]);
+  const { toasts, showToast, removeToast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, message: '', id: null, type: '' });
 
   useEffect(() => {
     if (token) {
@@ -143,12 +147,12 @@ function App() {
       });
       if (response.ok) {
         setCurrentUser({ ...currentUser, solicitudAgente: true });
-        alert('Solicitud de privilegios de Agente enviada al Administrador.');
+        showToast('Solicitud de privilegios de Agente enviada al Administrador.', 'success');
       } else {
-        alert('Error al enviar solicitud.');
+        showToast('Error al enviar solicitud.', 'error');
       }
     } catch (error) {
-      alert('Error de red al enviar solicitud.');
+      showToast('Error de red al enviar solicitud.', 'error');
     }
   };
 
@@ -163,14 +167,14 @@ function App() {
         body: JSON.stringify({ rol: nuevoRol })
       });
       if (response.ok) {
-        alert('Rol actualizado con éxito.');
+        showToast('Rol actualizado con éxito.', 'success');
         fetchUsuarios();
       } else {
         const err = await response.json();
-        alert('Error: ' + (err.message || JSON.stringify(err)));
+        showToast('Error: ' + (err.message || JSON.stringify(err)), 'error');
       }
     } catch (error) {
-      alert('Error de red al actualizar rol.');
+      showToast('Error de red al actualizar rol.', 'error');
     }
   };
 
@@ -322,13 +326,13 @@ function App() {
       if (response.ok) {
         fetchPropiedades();
         cancelEdit();
-        alert(isEditing ? 'Propiedad actualizada con éxito' : 'Propiedad registrada con éxito');
+        showToast(isEditing ? 'Propiedad actualizada con éxito' : 'Propiedad registrada con éxito', 'success');
       } else {
         const errorData = await response.json();
-        alert('Error: ' + JSON.stringify(errorData));
+        showToast('Error: ' + JSON.stringify(errorData), 'error');
       }
     } catch (error) {
-      alert('Error al conectar con el servidor');
+      showToast('Error al conectar con el servidor', 'error');
     }
   };
 
@@ -368,13 +372,39 @@ function App() {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('¿Estás seguro de eliminar esta propiedad?')) return;
+    setConfirmDelete({
+      isOpen: true,
+      message: '¿Estás seguro de eliminar esta propiedad?',
+      id,
+      type: 'propiedad',
+    });
+  };
+
+  const executeDelete = async () => {
+    const { id, type } = confirmDelete;
     try {
-      const response = await fetch(`${API_URL}/propiedades/${id}`, { method: 'DELETE', headers: authHeaders });
-      if (response.ok) fetchPropiedades();
+      if (type === 'propiedad') {
+        const response = await fetch(`${API_URL}/propiedades/${id}`, { method: 'DELETE', headers: authHeaders });
+        if (response.ok) {
+          fetchPropiedades();
+          showToast('Propiedad eliminada con éxito.', 'success');
+        }
+      } else if (type === 'cliente') {
+        const response = await fetch(`${API_URL}/usuarios/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          fetchClientes();
+          showToast('Cliente de baja con éxito.', 'success');
+        } else {
+          showToast('Error al eliminar cliente.', 'error');
+        }
+      }
     } catch (error) {
-      alert('Error al eliminar la propiedad');
+      showToast('Error al eliminar.', 'error');
     }
+    setConfirmDelete({ isOpen: false, message: '', id: null, type: '' });
   };
 
   const propiedadesFiltradas = propiedades.filter(p => {
@@ -419,40 +449,28 @@ function App() {
         });
 
         if (response.ok) {
-          alert(editandoCliente ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.');
+          showToast(editandoCliente ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.', 'success');
           fetchClientes();
           setFormCliente({ nombre: '', email: '', telefono: '', interes: '' });
           setEditandoCliente(null);
           setShowClienteForm(false);
         } else {
           const err = await response.json();
-          alert('Error: ' + (err.message || 'Error en la operación'));
+          showToast('Error: ' + (err.message || 'Error en la operación'), 'error');
         }
       } catch (error) {
-        alert('Error de conexión al guardar cliente.');
+        showToast('Error de conexión al guardar cliente.', 'error');
       }
     }
   };
 
   const eliminarCliente = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
-      try {
-        const response = await fetch(`${API_URL}/usuarios/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.ok) {
-          alert('Cliente de baja con éxito.');
-          fetchClientes();
-        } else {
-          alert('Error al eliminar cliente.');
-        }
-      } catch (error) {
-        alert('Error de conexión al eliminar cliente.');
-      }
-    }
+    setConfirmDelete({
+      isOpen: true,
+      message: '¿Estás seguro de eliminar este cliente?',
+      id,
+      type: 'cliente',
+    });
   };
 
   const editarCliente = (cliente) => {
@@ -504,22 +522,23 @@ function App() {
               <p className="text-slate-500 text-xs text-center mb-6">Accede a tus herramientas administrativas o de agente/cliente</p>
 
               <div className="form-group-custom">
-                <label className="input-label-custom">Email</label>
-                <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                <label className="input-label-custom" htmlFor="login-email">Email</label>
+                <input id="login-email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
                   className="input-custom" required placeholder="ejemplo@correo.com" />
               </div>
               <div className="form-group-custom">
-                <label className="input-label-custom">Contraseña</label>
-                <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                <label className="input-label-custom" htmlFor="login-password">Contraseña</label>
+                <input id="login-password" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
                   className="input-custom" required placeholder="••••••••" />
               </div>
-              {loginError && <div className="error-alert">{loginError}</div>}
+              {loginError && <div className="error-alert" role="alert">{loginError}</div>}
               <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">
                 Ingresar
               </button>
             </form>
           </div>
         </div>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
     );
   }
@@ -580,7 +599,7 @@ function App() {
                   <LogOut className="w-4 h-4" /> Salir
                 </button>
               </nav>
-              <button className="md:hidden text-gray-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              <button className="md:hidden text-gray-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menú de navegación">
                 <Menu className="w-6 h-6" />
               </button>
             </div>
@@ -630,11 +649,11 @@ function App() {
                     <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <input type="text" placeholder="Buscar por título o ubicación..." value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Buscar propiedades por título o ubicación" />
                   </div>
                   <input type="number" placeholder="Precio máximo" value={filtroPrecio}
                     onChange={(e) => setFiltroPrecio(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-48" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-48" aria-label="Filtrar por precio máximo" />
                   {currentUser?.rol !== 'cliente' && (
                     <button onClick={() => { cancelEdit(); setShowFormProp(!showFormProp); }}
                       className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
@@ -653,48 +672,48 @@ function App() {
                       <h3 className="text-lg font-bold text-gray-900">
                         {isEditing ? 'Editar Propiedad' : 'Nueva Propiedad'}
                       </h3>
-                      <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
+                      <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700" aria-label="Cerrar formulario"><X className="w-6 h-6" /></button>
                     </div>
                     <form onSubmit={handleSubmit}>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <input type="text" name="titulo" placeholder="Título" value={formData.titulo} onChange={handleInputChange} required
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                        <input type="number" name="precio" placeholder="Precio (USD)" value={formData.precio} onChange={handleInputChange} required
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                        <select name="tipo_inmueble" value={formData.tipo_inmueble} onChange={handleInputChange}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                          <option value="casa">Casa</option>
-                          <option value="departamento">Departamento</option>
-                          <option value="terreno">Terreno</option>
-                          <option value="local">Local</option>
-                        </select>
-                        <input type="text" name="direccion" placeholder="Ubicación / Dirección" value={formData.direccion} onChange={handleInputChange} required
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                        <select name="canton_id" value={formData.canton_id} onChange={handleCantonChange}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                          <option value="">Seleccionar cantón</option>
-                          {cantones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                        </select>
-                        <select name="parroquia_id" value={formData.parroquia_id} onChange={handleInputChange}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                          <option value="">Seleccionar parroquia</option>
-                          {parroquias.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                        </select>
-                        <input type="number" name="dormitorios" placeholder="Dormitorios" value={formData.dormitorios} onChange={handleInputChange}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                        <input type="number" name="banos" placeholder="Baños" value={formData.banos} onChange={handleInputChange}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                        <input type="number" name="superficie_m2" placeholder="Área (m²)" value={formData.superficie_m2} onChange={handleInputChange} required
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <input type="text" name="titulo" placeholder="Título" value={formData.titulo} onChange={handleInputChange} required
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Título de la propiedad" />
+                    <input type="number" name="precio" placeholder="Precio (USD)" value={formData.precio} onChange={handleInputChange} required
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Precio en dólares" />
+                    <select name="tipo_inmueble" value={formData.tipo_inmueble} onChange={handleInputChange}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Tipo de inmueble">
+                      <option value="casa">Casa</option>
+                      <option value="departamento">Departamento</option>
+                      <option value="terreno">Terreno</option>
+                      <option value="local">Local</option>
+                    </select>
+                    <input type="text" name="direccion" placeholder="Ubicación / Dirección" value={formData.direccion} onChange={handleInputChange} required
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Dirección de la propiedad" />
+                    <select name="canton_id" value={formData.canton_id} onChange={handleCantonChange}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Cantón">
+                      <option value="">Seleccionar cantón</option>
+                      {cantones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                    <select name="parroquia_id" value={formData.parroquia_id} onChange={handleInputChange}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Parroquia">
+                      <option value="">Seleccionar parroquia</option>
+                      {parroquias.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    </select>
+                    <input type="number" name="dormitorios" placeholder="Dormitorios" value={formData.dormitorios} onChange={handleInputChange}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Número de dormitorios" />
+                    <input type="number" name="banos" placeholder="Baños" value={formData.banos} onChange={handleInputChange}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Número de baños" />
+                    <input type="number" name="superficie_m2" placeholder="Área (m²)" value={formData.superficie_m2} onChange={handleInputChange} required
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Superficie en metros cuadrados" />
                       </div>
                       <div className="mb-4">
-                        <textarea name="descripcion" placeholder="Descripción detallada" value={formData.descripcion} onChange={handleInputChange} required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" />
+                      <textarea name="descripcion" placeholder="Descripción detallada" value={formData.descripcion} onChange={handleInputChange} required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="2" aria-label="Descripción detallada" />
                       </div>
                       <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Imágenes (URLs)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="imagen-url">Imágenes (URLs)</label>
                         <div className="flex gap-2 mb-2">
-                          <input type="text" placeholder="Pegar URL de imagen..." value={imagenUrl}
+                          <input id="imagen-url" type="text" placeholder="Pegar URL de imagen..." value={imagenUrl}
                             onChange={(e) => setImagenUrl(e.target.value)}
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                           <button type="button" onClick={handleAddImagen}
@@ -705,7 +724,7 @@ function App() {
                             {imagenes.map((url, i) => (
                               <li key={i} className="flex items-center justify-between bg-gray-50 px-3 py-1.5 rounded text-sm">
                                 <span className="truncate text-gray-600">{url}</span>
-                                <button type="button" onClick={() => handleRemoveImagen(i)} className="text-red-500 hover:text-red-700 ml-2"><X className="w-4 h-4" /></button>
+                                <button type="button" onClick={() => handleRemoveImagen(i)} className="text-red-500 hover:text-red-700 ml-2" aria-label="Eliminar imagen"><X className="w-4 h-4" /></button>
                               </li>
                             ))}
                           </ul>
@@ -785,7 +804,14 @@ function App() {
             </div>
 
             {selectedProp && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedProp(null)}>
+              <div
+                className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+                onClick={() => setSelectedProp(null)}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-prop-title"
+                onKeyDown={(e) => { if (e.key === 'Escape') setSelectedProp(null); }}
+              >
                 <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                   <div className="relative">
                     {obtenerPrimeraImagen(selectedProp.imagenes) ? (
@@ -796,7 +822,7 @@ function App() {
                       <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400">Sin imagen</div>
                     )}
                     <button onClick={() => setSelectedProp(null)}
-                      className="absolute top-3 right-3 bg-white rounded-full p-1.5 shadow-md hover:bg-gray-100">
+                      className="absolute top-3 right-3 bg-white rounded-full p-1.5 shadow-md hover:bg-gray-100" aria-label="Cerrar detalle">
                       <X className="w-5 h-5" />
                     </button>
                     <div className="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold">
@@ -804,7 +830,7 @@ function App() {
                     </div>
                   </div>
                   <div className="p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">{selectedProp.titulo}</h2>
+                    <h2 id="modal-prop-title" className="text-xl font-bold text-gray-900 mb-2">{selectedProp.titulo}</h2>
                     <div className="flex items-center gap-1 text-gray-600 mb-4">
                       <MapPin className="w-4 h-4" />
                       <span className="text-sm">{selectedProp.direccion}</span>
@@ -833,21 +859,21 @@ function App() {
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold text-gray-900">{editandoCliente ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
-                  <button onClick={() => { setShowClienteForm(false); setEditandoCliente(null); }} className="text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
+                  <button onClick={() => { setShowClienteForm(false); setEditandoCliente(null); }} className="text-gray-500 hover:text-gray-700" aria-label="Cerrar formulario"><X className="w-6 h-6" /></button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <input type="text" placeholder="Nombre completo" value={formCliente.nombre}
                     onChange={(e) => setFormCliente({ ...formCliente, nombre: e.target.value })}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Nombre completo" />
                   <input type="email" placeholder="Email" value={formCliente.email}
                     onChange={(e) => setFormCliente({ ...formCliente, email: e.target.value })}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Correo electrónico" />
                   <input type="tel" placeholder="Teléfono" value={formCliente.telefono}
                     onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Teléfono" />
                   <input type="text" placeholder="Tipo de interés" value={formCliente.interes}
                     onChange={(e) => setFormCliente({ ...formCliente, interes: e.target.value })}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Tipo de interés" />
                 </div>
                 <div className="flex gap-3">
                   <button onClick={agregarCliente}
@@ -986,10 +1012,11 @@ function App() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <select 
+                          <select
                             value={usuario.rol}
                             onChange={(e) => handleCambiarRol(usuario.id, e.target.value)}
                             className="px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                            aria-label="Cambiar rol de usuario"
                           >
                             <option value="cliente">Cliente</option>
                             <option value="agente">Agente</option>
@@ -1011,6 +1038,13 @@ function App() {
           <p className="text-gray-400 text-sm">© 2026 InmoEcuador - Plataforma de Gestión Inmobiliaria</p>
         </div>
       </footer>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        message={confirmDelete.message}
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete({ isOpen: false, message: '', id: null, type: '' })}
+      />
     </div>
   );
 }
