@@ -31,6 +31,41 @@ export class ClientesService {
     return this.usuarioRepository.save(usuario);
   }
 
+  async findAll(user: { id: string; rol: string }) {
+    if (user.rol === RolUsuario.ADMINISTRADOR) {
+      return this.usuarioRepository.find({
+        where: { rol: RolUsuario.CLIENTE },
+        relations: ['intereses', 'intereses.propiedad', 'intereses.propiedad.agente'],
+        select: {
+          id: true,
+          nombre: true,
+          email: true,
+          telefono: true,
+          cedula: true,
+          direccion: true,
+          rol: true,
+          fecha_registro: true,
+        },
+        order: { fecha_registro: 'DESC' },
+      });
+    }
+
+    if (user.rol === RolUsuario.AGENTE) {
+      return this.usuarioRepository.createQueryBuilder('usuario')
+        .innerJoinAndSelect('usuario.intereses', 'interes')
+        .innerJoinAndSelect('interes.propiedad', 'propiedad')
+        .leftJoinAndSelect('propiedad.agente', 'agente')
+        .leftJoinAndSelect('propiedad.canton', 'canton')
+        .leftJoinAndSelect('propiedad.parroquia', 'parroquia')
+        .where('usuario.rol = :rol', { rol: RolUsuario.CLIENTE })
+        .andWhere('propiedad.agente_id = :agenteId', { agenteId: user.id })
+        .orderBy('usuario.fecha_registro', 'DESC')
+        .getMany();
+    }
+
+    return [];
+  }
+
   async getPerfil(id: string) {
     const usuario = await this.usuarioRepository.findOne({
       where: { id },
@@ -42,6 +77,7 @@ export class ClientesService {
         cedula: true,
         direccion: true,
         rol: true,
+        solicitudAgente: true,
         fecha_registro: true,
       },
     });

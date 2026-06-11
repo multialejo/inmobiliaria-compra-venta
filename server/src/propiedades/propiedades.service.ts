@@ -53,8 +53,13 @@ export class PropiedadesService {
     return this.propiedadRepository.save(propiedad);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: { id: string; rol: string }) {
     const propiedad = await this.findOne(id);
+    if (user.rol === 'agente' && propiedad.agente_id !== user.id) {
+      throw new ForbiddenException(
+        'No puedes eliminar propiedades de otros agentes',
+      );
+    }
     await this.propiedadRepository.remove(propiedad);
     return { message: `Propiedad con ID ${id} eliminada` };
   }

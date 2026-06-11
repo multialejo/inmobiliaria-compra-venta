@@ -21,7 +21,7 @@ export class InteresesController {
   constructor(private readonly interesesService: InteresesService) {}
 
   @Post()
-  @Roles('cliente')
+  @Roles('cliente', 'agente', 'administrador')
   create(
     @Body() createInteresDto: CreateInteresDto,
     @CurrentUser() user: { id: string; rol: string },
@@ -30,7 +30,7 @@ export class InteresesController {
   }
 
   @Get('mis-intereses')
-  @Roles('cliente')
+  @Roles('cliente', 'agente', 'administrador')
   findMine(@CurrentUser() user: { id: string; rol: string }) {
     return this.interesesService.findMine(user.id);
   }

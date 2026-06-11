@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, MapPin, DollarSign, Bed, Bath, Maximize2, Search, ChevronDown, Menu, LogOut, User } from 'lucide-react';
 import './App.css';
+import CatalogPage from './components/CatalogPage/CatalogPage';
 
 const API_URL = 'http://localhost:3000/api';
 
 const PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350"><rect fill="#e5e7eb" width="500" height="350"/><text fill="#9ca3af" font-family="sans-serif" font-size="18" x="50%" y="50%" text-anchor="middle" dy=".3em">Sin imagen</text></svg>');
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('catalog');
   const [activeTab, setActiveTab] = useState('propiedades');
   const [showFormProp, setShowFormProp] = useState(false);
   const [showFormCliente, setShowFormCliente] = useState(false);
@@ -25,6 +27,13 @@ function App() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [adminAuthTab, setAdminAuthTab] = useState('login');
+  const [regNombre, setRegNombre] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regTelefono, setRegTelefono] = useState('');
+  const [regCedula, setRegCedula] = useState('');
+  const [regDireccion, setRegDireccion] = useState('');
 
 
   const [imagenes, setImagenes] = useState([]);
@@ -39,10 +48,7 @@ function App() {
 
   const [filtroPrecio, setFiltroPrecio] = useState('');
 
-  const [clientes, setClientes] = useState([
-    { id: 1, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '0987654321', interes: 'Casa' },
-    { id: 2, nombre: 'María García', email: 'maria@email.com', telefono: '0987654322', interes: 'Departamento' },
-  ]);
+  const [clientes, setClientes] = useState([]);
   const [formCliente, setFormCliente] = useState({ nombre: '', email: '', telefono: '', interes: '' });
   const [editandoCliente, setEditandoCliente] = useState(null);
   const [showClienteForm, setShowClienteForm] = useState(false);
@@ -52,12 +58,121 @@ function App() {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
+  const [usuarios, setUsuarios] = useState([]);
+
   useEffect(() => {
     if (token) {
+      fetchUserProfile();
       fetchCantones();
       fetchPropiedades();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      if (currentUser?.rol === 'administrador') {
+        fetchUsuarios();
+      }
+      if (currentUser?.rol === 'administrador' || currentUser?.rol === 'agente') {
+        fetchClientes();
+      }
+    }
+  }, [token, currentUser]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clientes/perfil`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser(data);
+      } else {
+        handleLogout();
+      }
+    } catch (error) {
+      console.error('Error al obtener perfil:', error);
+    }
+  };
+
+  const fetchUsuarios = async () => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsuarios(data);
+      }
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+    }
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clientes`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setClientes(data);
+      }
+    } catch (error) {
+      console.error('Error al obtener clientes:', error);
+    }
+  };
+
+  const handleSolicitarAgente = async () => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios/solicitar-agente`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        setCurrentUser({ ...currentUser, solicitudAgente: true });
+        alert('Solicitud de privilegios de Agente enviada al Administrador.');
+      } else {
+        alert('Error al enviar solicitud.');
+      }
+    } catch (error) {
+      alert('Error de red al enviar solicitud.');
+    }
+  };
+
+  const handleCambiarRol = async (usuarioId, nuevoRol) => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios/${usuarioId}/rol`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ rol: nuevoRol })
+      });
+      if (response.ok) {
+        alert('Rol actualizado con éxito.');
+        fetchUsuarios();
+      } else {
+        const err = await response.json();
+        alert('Error: ' + (err.message || JSON.stringify(err)));
+      }
+    } catch (error) {
+      alert('Error de red al actualizar rol.');
+    }
+  };
 
   const fetchCantones = async () => {
     try {
@@ -103,6 +218,43 @@ function App() {
       });
       if (!response.ok) throw new Error('Credenciales inválidas');
       const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      setToken(data.access_token);
+      setCurrentUser(data.usuario);
+    } catch (error) {
+      setLoginError(error.message);
+    }
+  };
+
+  const handleAdminRegister = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    try {
+      const response = await fetch(`${API_URL}/clientes/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: regNombre,
+          email: regEmail,
+          contrasena: regPassword,
+          telefono: regTelefono || undefined,
+          cedula: regCedula || undefined,
+          direccion: regDireccion || undefined
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Error en registro');
+      }
+
+      const loginRes = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: regEmail, contrasena: regPassword }),
+      });
+      if (!loginRes.ok) throw new Error('Error al ingresar');
+      const data = await loginRes.json();
       localStorage.setItem('token', data.access_token);
       setToken(data.access_token);
       setCurrentUser(data.usuario);
@@ -241,21 +393,66 @@ function App() {
     try { const d = JSON.parse(desc); return d.texto || desc; } catch { return desc; }
   };
 
-  const agregarCliente = () => {
+  const agregarCliente = async () => {
     if (formCliente.nombre && formCliente.email) {
-      if (editandoCliente) {
-        setClientes(clientes.map(c => c.id === editandoCliente.id ? { ...formCliente, id: editandoCliente.id } : c));
-        setEditandoCliente(null);
-      } else {
-        setClientes([...clientes, { ...formCliente, id: Date.now() }]);
+      try {
+        const body = {
+          nombre: formCliente.nombre,
+          email: formCliente.email,
+          telefono: formCliente.telefono || undefined,
+          contrasena: 'cliente123',
+        };
+
+        const url = editandoCliente 
+          ? `${API_URL}/usuarios/${editandoCliente.id}` 
+          : `${API_URL}/clientes/register`;
+        
+        const method = editandoCliente ? 'PATCH' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+          alert(editandoCliente ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.');
+          fetchClientes();
+          setFormCliente({ nombre: '', email: '', telefono: '', interes: '' });
+          setEditandoCliente(null);
+          setShowClienteForm(false);
+        } else {
+          const err = await response.json();
+          alert('Error: ' + (err.message || 'Error en la operación'));
+        }
+      } catch (error) {
+        alert('Error de conexión al guardar cliente.');
       }
-      setFormCliente({ nombre: '', email: '', telefono: '', interes: '' });
-      setShowClienteForm(false);
     }
   };
 
-  const eliminarCliente = (id) => {
-    setClientes(clientes.filter(c => c.id !== id));
+  const eliminarCliente = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
+      try {
+        const response = await fetch(`${API_URL}/usuarios/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          alert('Cliente de baja con éxito.');
+          fetchClientes();
+        } else {
+          alert('Error al eliminar cliente.');
+        }
+      } catch (error) {
+        alert('Error de conexión al eliminar cliente.');
+      }
+    }
   };
 
   const editarCliente = (cliente) => {
@@ -263,6 +460,18 @@ function App() {
     setEditandoCliente(cliente);
     setShowClienteForm(true);
   };
+
+  if (currentPage === 'catalog') {
+    return (
+      <CatalogPage 
+        currentUser={currentUser}
+        token={token}
+        setToken={setToken}
+        setCurrentUser={setCurrentUser}
+        onNavigateToDashboard={() => setCurrentPage('dashboard')} 
+      />
+    );
+  }
 
   if (!token) {
     return (
@@ -278,28 +487,36 @@ function App() {
                     <p className="text-xs text-gray-500">Bolívar, Ecuador</p>
                   </div>
                 </div>
+                <button 
+                  onClick={() => setCurrentPage('catalog')} 
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg transition text-sm font-semibold flex items-center gap-1.5"
+                >
+                  Ver Catálogo Público
+                </button>
               </div>
             </div>
           </div>
         </header>
-        <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Iniciar Sesión</h2>
-            <p className="text-gray-500 text-sm text-center mb-6">Ingresa con tus credenciales</p>
-
+        <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-slate-100">
             <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Ingreso al Sistema</h2>
+              <p className="text-slate-500 text-xs text-center mb-6">Accede a tus herramientas administrativas o de agente/cliente</p>
+
+              <div className="form-group-custom">
+                <label className="input-label-custom">Email</label>
                 <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                  className="input-custom" required placeholder="ejemplo@correo.com" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <div className="form-group-custom">
+                <label className="input-label-custom">Contraseña</label>
                 <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+                  className="input-custom" required placeholder="••••••••" />
               </div>
-              {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
-              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">Ingresar</button>
+              {loginError && <div className="error-alert">{loginError}</div>}
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">
+                Ingresar
+              </button>
             </form>
           </div>
         </div>
@@ -321,18 +538,44 @@ function App() {
                 </div>
               </div>
               <nav className="hidden md:flex items-center gap-6">
+                <button onClick={() => setCurrentPage('catalog')}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition mr-2">
+                  Ver Catálogo
+                </button>
                 <button onClick={() => setActiveTab('propiedades')}
                   className={`text-sm font-medium transition ${activeTab === 'propiedades' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   Propiedades
                 </button>
-                <button onClick={() => setActiveTab('clientes')}
-                  className={`text-sm font-medium transition ${activeTab === 'clientes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                  Clientes
-                </button>
+                {currentUser?.rol !== 'cliente' && (
+                  <button onClick={() => setActiveTab('clientes')}
+                    className={`text-sm font-medium transition ${activeTab === 'clientes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                    Clientes
+                  </button>
+                )}
+                {currentUser?.rol === 'administrador' && (
+                  <button onClick={() => setActiveTab('usuarios')}
+                    className={`text-sm font-medium transition ${activeTab === 'usuarios' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                    Usuarios/Solicitudes
+                  </button>
+                )}
                 <span className="flex items-center gap-1.5 text-sm text-gray-500 border-l pl-4 ml-2">
                   <User className="w-4 h-4" />
-                  {currentUser?.nombre} ({currentUser?.rol})
+                  {currentUser?.nombre} ({currentUser?.rol?.toUpperCase()})
                 </span>
+                {currentUser?.rol === 'cliente' && (
+                  currentUser.solicitudAgente ? (
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2.5 py-1.5 rounded-lg font-bold">
+                      ⏳ Solicitud Agente Pendiente
+                    </span>
+                  ) : (
+                    <button 
+                      onClick={handleSolicitarAgente}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition"
+                    >
+                      🔑 Solicitar ser Agente
+                    </button>
+                  )
+                )}
                 <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition">
                   <LogOut className="w-4 h-4" /> Salir
                 </button>
@@ -343,11 +586,33 @@ function App() {
             </div>
             {mobileMenuOpen && (
               <div className="md:hidden pt-4 pb-2 border-t mt-4 space-y-3">
+                <button onClick={() => { setCurrentPage('catalog'); setMobileMenuOpen(false); }}
+                  className="block w-full text-left text-sm font-semibold py-2 text-blue-600">Ver Catálogo</button>
                 <button onClick={() => { setActiveTab('propiedades'); setMobileMenuOpen(false); }}
                   className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'propiedades' ? 'text-blue-600' : 'text-gray-600'}`}>Propiedades</button>
-                <button onClick={() => { setActiveTab('clientes'); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'clientes' ? 'text-blue-600' : 'text-gray-600'}`}>Clientes</button>
-                <div className="text-sm text-gray-500 py-2 border-t">{currentUser?.nombre} ({currentUser?.rol})</div>
+                {currentUser?.rol !== 'cliente' && (
+                  <button onClick={() => { setActiveTab('clientes'); setMobileMenuOpen(false); }}
+                    className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'clientes' ? 'text-blue-600' : 'text-gray-600'}`}>Clientes</button>
+                )}
+                {currentUser?.rol === 'administrador' && (
+                  <button onClick={() => { setActiveTab('usuarios'); setMobileMenuOpen(false); }}
+                    className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'usuarios' ? 'text-blue-600' : 'text-gray-600'}`}>Usuarios/Solicitudes</button>
+                )}
+                <div className="text-sm text-gray-500 py-2 border-t flex flex-col gap-2">
+                  <span>{currentUser?.nombre} ({currentUser?.rol?.toUpperCase()})</span>
+                  {currentUser?.rol === 'cliente' && (
+                    currentUser.solicitudAgente ? (
+                      <span className="text-xs text-yellow-600 font-bold">⏳ Solicitud Agente Pendiente</span>
+                    ) : (
+                      <button 
+                        onClick={handleSolicitarAgente}
+                        className="text-xs bg-blue-600 text-white py-1 px-2.5 rounded font-bold"
+                      >
+                        🔑 Solicitar ser Agente
+                      </button>
+                    )
+                  )}
+                </div>
                 <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-500 py-2">Salir</button>
               </div>
             )}
@@ -370,10 +635,12 @@ function App() {
                   <input type="number" placeholder="Precio máximo" value={filtroPrecio}
                     onChange={(e) => setFiltroPrecio(e.target.value)}
                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-48" />
-                  <button onClick={() => { cancelEdit(); setShowFormProp(!showFormProp); }}
-                    className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
-                    <Plus className="w-5 h-5" /> Agregar
-                  </button>
+                  {currentUser?.rol !== 'cliente' && (
+                    <button onClick={() => { cancelEdit(); setShowFormProp(!showFormProp); }}
+                      className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                      <Plus className="w-5 h-5" /> Agregar
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -495,9 +762,13 @@ function App() {
                         </div>
                         <p className="text-xs text-gray-600 mb-4 line-clamp-2">{parseDescripcion(prop.descripcion)}</p>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={(e) => handleEditClick(prop, e)}
-                            className="flex-1 bg-yellow-500 text-white px-3 py-2 rounded text-xs font-medium hover:bg-yellow-600 transition">Editar</button>
-                          {currentUser?.rol === 'administrador' && (
+                          {(currentUser?.rol === 'administrador' || 
+                            (currentUser?.rol === 'agente' && prop.agente_id === currentUser.id)) && (
+                            <button onClick={(e) => handleEditClick(prop, e)}
+                              className="flex-1 bg-yellow-500 text-white px-3 py-2 rounded text-xs font-medium hover:bg-yellow-600 transition">Editar</button>
+                          )}
+                          {(currentUser?.rol === 'administrador' || 
+                            (currentUser?.rol === 'agente' && prop.agente_id === currentUser.id)) && (
                             <button onClick={(e) => handleDelete(prop.id, e)}
                               className="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-medium hover:bg-red-600 transition">Eliminar</button>
                           )}
@@ -550,13 +821,15 @@ function App() {
           <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
             <div className="mb-6 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Clientes Registrados</h2>
-              <button onClick={() => { setEditandoCliente(null); setFormCliente({ nombre: '', email: '', telefono: '', interes: '' }); setShowClienteForm(!showClienteForm); }}
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2">
-                <Plus className="w-5 h-5" /> Registrar Cliente
-              </button>
+              {currentUser?.rol === 'administrador' && (
+                <button onClick={() => { setEditandoCliente(null); setFormCliente({ nombre: '', email: '', telefono: '', interes: '' }); setShowClienteForm(!showClienteForm); }}
+                  className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2">
+                  <Plus className="w-5 h-5" /> Registrar Cliente
+                </button>
+              )}
             </div>
 
-            {showClienteForm && (
+            {showClienteForm && currentUser?.rol === 'administrador' && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold text-gray-900">{editandoCliente ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
@@ -594,7 +867,10 @@ function App() {
                       <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Email</th>
                       <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Teléfono</th>
                       <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Interés</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Acciones</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Agente de propiedad</th>
+                      {currentUser?.rol === 'administrador' && (
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Acciones</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -603,12 +879,122 @@ function App() {
                         <td className="px-6 py-4 text-sm text-gray-900 font-medium">{cliente.nombre}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{cliente.email}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{cliente.telefono}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{cliente.interes}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 font-semibold text-blue-600">
+                          {cliente.intereses && cliente.intereses.length > 0 
+                            ? cliente.intereses.map(i => i.propiedad?.titulo || 'Propiedad').join(', ') 
+                            : 'Ninguno'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                          {cliente.intereses && cliente.intereses.length > 0 
+                            ? cliente.intereses.map(i => i.propiedad?.agente?.nombre || 'Sin agente').join(', ') 
+                            : '—'}
+                        </td>
+                        {currentUser?.rol === 'administrador' && (
+                          <td className="px-6 py-4 text-sm flex gap-2">
+                            <button onClick={() => editarCliente(cliente)}
+                              className="bg-yellow-500 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-yellow-600 transition">Editar</button>
+                            <button onClick={() => eliminarCliente(cliente.id)}
+                              className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-red-600 transition">Eliminar</button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'usuarios' && currentUser?.rol === 'administrador' && (
+          <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Gestión de Usuarios y Roles</h2>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-100 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Nombre</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Email</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Rol Actual</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Estado Solicitud</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Acciones de Transición</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Cambiar Rol Manual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usuarios.map((usuario) => (
+                      <tr key={usuario.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">{usuario.nombre}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{usuario.email}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                            usuario.rol === 'administrador' ? 'bg-red-100 text-red-800' :
+                            usuario.rol === 'agente' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {usuario.rol}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {usuario.solicitudAgente ? (
+                            <div className="space-y-1.5 bg-yellow-50 border border-yellow-200 rounded-xl p-3.5 max-w-xs shadow-sm text-xs">
+                              <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 rounded text-[10px] font-bold block w-fit mb-2 uppercase">
+                                ⏳ Solicitud Agente
+                              </span>
+                              <p className="text-gray-700"><strong className="text-gray-900">Cédula:</strong> {usuario.cedula || '—'}</p>
+                              <p className="text-gray-700"><strong className="text-gray-900">Teléfono:</strong> {usuario.telefono || '—'}</p>
+                              <p className="text-gray-700"><strong className="text-gray-900">Dirección:</strong> {usuario.direccion || '—'}</p>
+                              <div className="border-t border-yellow-200 pt-1.5 mt-1.5 space-y-1">
+                                <p className="text-gray-700"><strong className="text-gray-900">Experiencia:</strong> {usuario.experienciaAgente || '—'}</p>
+                                <p className="text-gray-700"><strong className="text-gray-900">Licencia:</strong> {usuario.licenciaAgente || '—'}</p>
+                                <p className="text-gray-700"><strong className="text-gray-900">Motivo:</strong> {usuario.motivoAgente || '—'}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-sm flex gap-2">
-                          <button onClick={() => editarCliente(cliente)}
-                            className="bg-yellow-500 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-yellow-600 transition">Editar</button>
-                          <button onClick={() => eliminarCliente(cliente.id)}
-                            className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-red-600 transition">Eliminar</button>
+                          {usuario.rol === 'cliente' && usuario.solicitudAgente && (
+                            <>
+                              <button 
+                                onClick={() => handleCambiarRol(usuario.id, 'agente')}
+                                className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-green-700 transition"
+                              >
+                                Aprobar Agente
+                              </button>
+                              <button 
+                                onClick={() => handleCambiarRol(usuario.id, 'cliente')}
+                                className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-red-600 transition"
+                              >
+                                Rechazar
+                              </button>
+                            </>
+                          )}
+
+                          {usuario.rol === 'agente' && (
+                            <button 
+                              onClick={() => handleCambiarRol(usuario.id, 'cliente')}
+                              className="bg-yellow-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-yellow-600 transition"
+                            >
+                              Quitar Privilegios (Hacer Cliente)
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <select 
+                            value={usuario.rol}
+                            onChange={(e) => handleCambiarRol(usuario.id, e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="cliente">Cliente</option>
+                            <option value="agente">Agente</option>
+                            <option value="administrador">Administrador</option>
+                          </select>
                         </td>
                       </tr>
                     ))}

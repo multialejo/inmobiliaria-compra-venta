@@ -43,6 +43,18 @@ export class Usuario {
   @Column({ type: 'enum', enum: RolUsuario })
   rol: RolUsuario;
 
+  @Column({ name: 'solicitud_agente', type: 'boolean', default: false })
+  solicitudAgente: boolean;
+
+  @Column({ name: 'experiencia_agente', type: 'text', nullable: true })
+  experienciaAgente: string;
+
+  @Column({ name: 'licencia_agente', length: 100, nullable: true })
+  licenciaAgente: string;
+
+  @Column({ name: 'motivo_agente', type: 'text', nullable: true })
+  motivoAgente: string;
+
   @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
 

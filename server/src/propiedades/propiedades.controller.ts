@@ -59,9 +59,12 @@ export class PropiedadesController {
   }
 
   @Delete(':id')
-  @Roles('administrador')
-  remove(@Param('id') id: string) {
-    return this.propiedadesService.remove(id);
+  @Roles('administrador', 'agente')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; rol: string },
+  ) {
+    return this.propiedadesService.remove(id, user);
   }
 
   @Get('canton/:cantonId')
