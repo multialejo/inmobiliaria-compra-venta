@@ -117,6 +117,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
   // Buy interest and Auth Modal State
   const [interestRegistered, setInterestRegistered] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState('none');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState('login'); // 'login' | 'register'
 
@@ -273,7 +274,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
     setSelectedParroquia('');
   }, [selectedCanton, activeToken]);
 
-  // Check if current user already has interest registered for selected property
+  // Check if current user already has interest or purchase registered for selected property
   useEffect(() => {
     if (selectedProp && currentUser && token) {
       // Check if user already registered interest
@@ -291,9 +292,32 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           console.warn('Failed to fetch interests:', e);
         }
       };
+
+      // Check if user already has purchase request
+      const checkPurchase = async () => {
+        try {
+          const res = await fetch(`${API_URL}/compras/mis-compras`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const matching = data.find(x => x.propiedad_id === selectedProp.id || x.propiedad?.id === selectedProp.id);
+            if (matching) {
+              setPurchaseStatus(matching.estado);
+            } else {
+              setPurchaseStatus('none');
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch purchases:', e);
+        }
+      };
+
       checkInterest();
+      checkPurchase();
     } else {
       setInterestRegistered(false);
+      setPurchaseStatus('none');
     }
   }, [selectedProp, currentUser, token]);
 
@@ -354,7 +378,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
       
       // Auto-register interest if property was selected
       if (selectedProp) {
-        registerPurchaseInterest(selectedProp.id, data.access_token);
+        registerInterest(selectedProp.id, data.access_token);
       }
     } catch (error) {
       setAuthError(error.message);
@@ -402,15 +426,15 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
       
       // Auto-register interest
       if (selectedProp) {
-        registerPurchaseInterest(selectedProp.id, data.access_token);
+        registerInterest(selectedProp.id, data.access_token);
       }
     } catch (error) {
       setRegError(error.message);
     }
   };
 
-  // Register purchase interest in the backend
-  const registerPurchaseInterest = async (propId, userToken) => {
+  // Register interest in the backend (Lead)
+  const registerInterest = async (propId, userToken) => {
     const activeUserToken = userToken || token;
     if (!activeUserToken) return;
 
@@ -425,27 +449,39 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
       });
       if (res.ok) {
         setInterestRegistered(true);
-        if (selectedProp && selectedProp.id === propId) {
-          setSelectedProp({ ...selectedProp, estado: 'vendida' });
-        }
         fetchPropiedades(activeUserToken);
       }
     } catch (e) {
-      console.error('Error registering purchase interest:', e);
+      console.error('Error registering interest:', e);
     }
   };
 
-  // Handle clicking "Comprar"
-  const handleBuyClick = () => {
-    if (!currentUser) {
-      // Not logged in -> show login/register modal
-      setAuthError('');
-      setRegError('');
-      setAuthTab('login');
-      setShowAuthModal(true);
-    } else {
-      // Logged in -> register interest
-      registerPurchaseInterest(selectedProp.id);
+  // Register purchase request in the backend (Reservation)
+  const requestPurchase = async (propId, userToken) => {
+    const activeUserToken = userToken || token;
+    if (!activeUserToken) return;
+
+    try {
+      const res = await fetch(`${API_URL}/compras`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${activeUserToken}`
+        },
+        body: JSON.stringify({ propiedad_id: propId })
+      });
+      if (res.ok) {
+        setPurchaseStatus('pendiente');
+        if (selectedProp && selectedProp.id === propId) {
+          setSelectedProp({ ...selectedProp, estado: 'reservada' });
+        }
+        fetchPropiedades(activeUserToken);
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Error al iniciar la compra.');
+      }
+    } catch (e) {
+      console.error('Error requesting purchase:', e);
     }
   };
 
@@ -455,6 +491,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
     setToken(null);
     setCurrentUser(null);
     setInterestRegistered(false);
+    setPurchaseStatus('none');
   };
 
   const handleSolicitarAgenteClick = () => {
@@ -865,6 +902,11 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                           VENDIDA
                         </span>
                       )}
+                      {prop.estado === 'reservada' && (
+                        <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow uppercase">
+                          RESERVADA
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -1097,29 +1139,118 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                         Esta propiedad ya ha sido vendida y no está disponible para adquisición.
                       </p>
                     </div>
-                  ) : interestRegistered ? (
+                  ) : selectedProp.estado === 'reservada' ? (
                     <div className="text-center py-2">
-                      <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
-                      <h5 className="font-bold text-slate-900 text-sm mb-1">¡Interés Registrado!</h5>
+                      <div className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-lg inline-block mb-2 uppercase">
+                        🟡 Reservada
+                      </div>
                       <p className="text-xs text-slate-500 leading-relaxed">
-                        Ya registraste tu interés de compra en esta propiedad. Un asesor se comunicará contigo en breve.
+                        Esta propiedad está reservada en proceso de compra.
                       </p>
+                      {purchaseStatus === 'pendiente' ? (
+                        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-800 text-[11px] font-medium">
+                          ⏳ Tienes una solicitud de compra pendiente de aprobación.
+                        </div>
+                      ) : purchaseStatus === 'aprobada' ? (
+                        <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-2 text-green-800 text-[11px] font-medium">
+                          ✓ ¡Tu compra ha sido aprobada!
+                        </div>
+                      ) : (
+                        <div className="mt-3">
+                          {interestRegistered ? (
+                            <p className="text-[10px] text-green-600 font-semibold">
+                              ✓ Ya registraste tu interés en esta propiedad.
+                            </p>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                if (!currentUser) {
+                                  setAuthError('');
+                                  setRegError('');
+                                  setAuthTab('login');
+                                  setShowAuthModal(true);
+                                } else {
+                                  registerInterest(selectedProp.id);
+                                }
+                              }} 
+                              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2 px-4 rounded-xl transition"
+                            >
+                              📩 Dejar mi Interés (Lista de Espera)
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>
                       <h5 className="font-bold text-slate-800 text-xs mb-3 flex items-center gap-1.5 justify-center uppercase tracking-wide">
                         <ShieldCheck className="w-4 h-4 text-blue-600" />
-                        <span>Adquisición Directa</span>
+                        <span>Adquisición y Contacto</span>
                       </h5>
                       
                       <div className="flex flex-col gap-2">
-                        <button onClick={handleBuyClick} className="btn-buy-property">
-                          🤝 Comprar esta Propiedad
-                        </button>
-                        <p className="text-[10px] text-slate-400 text-center leading-normal">
+                        {purchaseStatus === 'pendiente' ? (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                            <CheckCircle className="w-6 h-6 text-amber-500 mx-auto mb-1" />
+                            <p className="text-xs font-bold text-amber-800">Reserva en proceso</p>
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              Has solicitado comprar esta propiedad. Esperando aprobación del agente.
+                            </p>
+                          </div>
+                        ) : purchaseStatus === 'aprobada' ? (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-1" />
+                            <p className="text-xs font-bold text-green-800">Propiedad Adquirida</p>
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              ¡Tu solicitud de compra fue aprobada con éxito!
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => {
+                                if (!currentUser) {
+                                  setAuthError('');
+                                  setRegError('');
+                                  setAuthTab('login');
+                                  setShowAuthModal(true);
+                                } else {
+                                  requestPurchase(selectedProp.id);
+                                }
+                              }} 
+                              className="btn-buy-property"
+                            >
+                              🤝 Reservar / Iniciar Compra
+                            </button>
+                            
+                            {interestRegistered ? (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center text-green-800 text-[11px] font-medium">
+                                ✓ Interés registrado (Le contactaremos en breve)
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => {
+                                  if (!currentUser) {
+                                    setAuthError('');
+                                    setRegError('');
+                                    setAuthTab('login');
+                                    setShowAuthModal(true);
+                                  } else {
+                                    registerInterest(selectedProp.id);
+                                  }
+                                }} 
+                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2 px-4 rounded-xl border border-slate-200 transition"
+                              >
+                                📩 Solo me interesa / Solicitar info
+                              </button>
+                            )}
+                          </>
+                        )}
+                        
+                        <p className="text-[10px] text-slate-400 text-center leading-normal mt-1">
                           {!currentUser 
-                            ? 'Se te solicitará registrarte o iniciar sesión para formalizar tu solicitud.' 
-                            : 'Al hacer clic, registraremos tu interés oficial de compra en la base de datos.'}
+                            ? 'Se te solicitará iniciar sesión para formalizar tu solicitud.' 
+                            : 'Reservar cambia el estado de la propiedad a "Reservada" y requiere confirmación del agente.'}
                         </p>
                       </div>
                     </>

@@ -20,18 +20,7 @@ export class InteresesService {
       ...createInteresDto,
       cliente_id: clienteId,
     });
-    const savedInteres = await this.interesRepository.save(interes);
-
-    // Update property status to 'vendida'
-    const propiedad = await this.propiedadRepository.findOne({
-      where: { id: createInteresDto.propiedad_id }
-    });
-    if (propiedad) {
-      propiedad.estado = EstadoPropiedad.VENDIDA;
-      await this.propiedadRepository.save(propiedad);
-    }
-
-    return savedInteres;
+    return this.interesRepository.save(interes);
   }
 
   findAll() {

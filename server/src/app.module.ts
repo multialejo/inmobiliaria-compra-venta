@@ -10,6 +10,7 @@ import { Parroquia } from './parroquias/entities/parroquia.entity';
 import { Usuario } from './usuarios/entities/usuario.entity';
 import { Propiedad } from './propiedades/entities/propiedad.entity';
 import { Interes } from './intereses/entities/interes.entity';
+import { Compra } from './compras/entities/compra.entity';
 import { SeedModule } from './seed/seed.module';
 import { CantonesModule } from './cantones/cantones.module';
 import { ParroquiasModule } from './parroquias/parroquias.module';
@@ -18,6 +19,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { InteresesModule } from './intereses/intereses.module';
+import { ComprasModule } from './compras/compras.module';
 
 @Module({
   imports: [
@@ -31,7 +33,7 @@ import { InteresesModule } from './intereses/intereses.module';
         username: config.get<string>('DB_USERNAME', 'admin'),
         password: config.get<string>('DB_PASSWORD', 'admin123'),
         database: config.get<string>('DB_DATABASE', 'inmobiliaria'),
-        entities: [Canton, Parroquia, Usuario, Propiedad, Interes],
+        entities: [Canton, Parroquia, Usuario, Propiedad, Interes, Compra],
         synchronize: true,
       }),
     }),
@@ -49,6 +51,7 @@ import { InteresesModule } from './intereses/intereses.module';
     AuthModule,
     ClientesModule,
     InteresesModule,
+    ComprasModule,
   ],
   controllers: [AppController],
   providers: [

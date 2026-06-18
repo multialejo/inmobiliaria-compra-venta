@@ -72,6 +72,7 @@ function App() {
   const [filtroPrecio, setFiltroPrecio] = useState('');
 
   const [clientes, setClientes] = useState([]);
+  const [compras, setCompras] = useState([]);
   const [formCliente, setFormCliente] = useState({ nombre: '', email: '', telefono: '', interes: '' });
   const [editandoCliente, setEditandoCliente] = useState(null);
   const [showClienteForm, setShowClienteForm] = useState(false);
@@ -100,6 +101,7 @@ function App() {
       }
       if (currentUser?.rol === 'administrador' || currentUser?.rol === 'agente') {
         fetchClientes();
+        fetchCompras();
       }
     }
   }, [token, currentUser?.rol]);
@@ -166,6 +168,47 @@ function App() {
       }
     } catch (error) {
       console.error('Error al obtener clientes:', error);
+    }
+  };
+
+  const fetchCompras = async () => {
+    try {
+      const response = await fetch(`${API_URL}/compras`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCompras(data);
+      }
+    } catch (error) {
+      console.error('Error al obtener compras:', error);
+    }
+  };
+
+  const handleActualizarEstadoCompra = async (compraId, nuevoEstado) => {
+    try {
+      const response = await fetch(`${API_URL}/compras/${compraId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+      if (response.ok) {
+        showToast(`Compra ${nuevoEstado === 'aprobada' ? 'aprobada' : 'cancelada'} con éxito`, 'success');
+        fetchCompras();
+        fetchPropiedades();
+      } else {
+        const err = await response.json();
+        showToast(err.message || 'Error al actualizar la compra', 'error');
+      }
+    } catch (error) {
+      console.error('Error al actualizar compra:', error);
+      showToast('Error de red al actualizar compra', 'error');
     }
   };
 
@@ -624,6 +667,12 @@ function App() {
                     Clientes
                   </button>
                 )}
+                {currentUser?.rol !== 'cliente' && (
+                  <button onClick={() => setActiveTab('compras')}
+                    className={`text-sm font-medium transition ${activeTab === 'compras' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                    Ventas/Reservas
+                  </button>
+                )}
                 {currentUser?.rol === 'administrador' && (
                   <button onClick={() => setActiveTab('usuarios')}
                     className={`text-sm font-medium transition ${activeTab === 'usuarios' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -665,6 +714,10 @@ function App() {
                 {currentUser?.rol !== 'cliente' && (
                   <button onClick={() => { setActiveTab('clientes'); setMobileMenuOpen(false); }}
                     className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'clientes' ? 'text-blue-600' : 'text-gray-600'}`}>Clientes</button>
+                )}
+                {currentUser?.rol !== 'cliente' && (
+                  <button onClick={() => { setActiveTab('compras'); setMobileMenuOpen(false); }}
+                    className={`block w-full text-left text-sm font-medium py-2 ${activeTab === 'compras' ? 'text-blue-600' : 'text-gray-600'}`}>Ventas/Reservas</button>
                 )}
                 {currentUser?.rol === 'administrador' && (
                   <button onClick={() => { setActiveTab('usuarios'); setMobileMenuOpen(false); }}
@@ -1033,6 +1086,95 @@ function App() {
                         )}
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'compras' && currentUser?.rol !== 'cliente' && (
+          <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Gestión de Ventas y Reservas</h2>
+              <button 
+                onClick={fetchCompras} 
+                className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 py-2 rounded-lg text-sm font-medium transition"
+              >
+                🔄 Actualizar
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-100 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Cliente</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Propiedad</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Precio</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Método de Pago</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Fecha</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Estado</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-700">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compras.length > 0 ? compras.map((compra) => (
+                      <tr key={compra.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="font-semibold">{compra.cliente?.nombre || 'Desconocido'}</div>
+                          <div className="text-xs text-gray-500">{compra.cliente?.email}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-800 font-medium">
+                          {compra.propiedad?.titulo || 'Propiedad no encontrada'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-blue-600">
+                          ${parseFloat(compra.precio_acordado || compra.propiedad?.precio || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {compra.metodo_pago || 'No especificado'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {new Date(compra.fecha_compra).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                            compra.estado === 'aprobada' ? 'bg-green-100 text-green-800' :
+                            compra.estado === 'cancelada' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {compra.estado}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm flex gap-2">
+                          {compra.estado === 'pendiente' ? (
+                            <>
+                              <button 
+                                onClick={() => handleActualizarEstadoCompra(compra.id, 'aprobada')}
+                                className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-green-700 transition"
+                              >
+                                Aprobar
+                              </button>
+                              <button 
+                                onClick={() => handleActualizarEstadoCompra(compra.id, 'cancelada')}
+                                className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-red-600 transition"
+                              >
+                                Cancelar
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-400 font-medium">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center text-sm text-gray-500">
+                          No hay registros de compras o reservas.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
