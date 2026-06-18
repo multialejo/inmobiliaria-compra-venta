@@ -4,20 +4,34 @@ import { Repository } from 'typeorm';
 import { Interes } from './entities/interes.entity';
 import { CreateInteresDto } from './dto/create-interes.dto';
 import { UpdateInteresDto } from './dto/update-interes.dto';
+import { Propiedad, EstadoPropiedad } from '../propiedades/entities/propiedad.entity';
 
 @Injectable()
 export class InteresesService {
   constructor(
     @InjectRepository(Interes)
     private interesRepository: Repository<Interes>,
+    @InjectRepository(Propiedad)
+    private propiedadRepository: Repository<Propiedad>,
   ) {}
 
-  create(createInteresDto: CreateInteresDto, clienteId: string) {
+  async create(createInteresDto: CreateInteresDto, clienteId: string) {
     const interes = this.interesRepository.create({
       ...createInteresDto,
       cliente_id: clienteId,
     });
-    return this.interesRepository.save(interes);
+    const savedInteres = await this.interesRepository.save(interes);
+
+    // Update property status to 'vendida'
+    const propiedad = await this.propiedadRepository.findOne({
+      where: { id: createInteresDto.propiedad_id }
+    });
+    if (propiedad) {
+      propiedad.estado = EstadoPropiedad.VENDIDA;
+      await this.propiedadRepository.save(propiedad);
+    }
+
+    return savedInteres;
   }
 
   findAll() {

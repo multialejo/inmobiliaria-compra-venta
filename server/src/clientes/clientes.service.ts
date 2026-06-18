@@ -78,6 +78,7 @@ export class ClientesService {
         direccion: true,
         rol: true,
         solicitudAgente: true,
+        estadoSolicitud: true,
         fecha_registro: true,
       },
     });

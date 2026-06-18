@@ -1,3 +1,22 @@
+/**
+ * @file CatalogPage.jsx
+ * @brief Vista del catálogo público e interactivo de bienes raíces.
+ * 
+ * @section estructura Estructura de la Vista
+ * Presenta una grilla de propiedades disponibles con filtros dinámicos basados en la provincia de Bolívar.
+ * Contiene:
+ * - Buscador general de texto (título y dirección).
+ * - Filtros por Ubicación (Cantón y Parroquia).
+ * - Filtros por Tipo de Inmueble y rango de precios.
+ * - Modal detallado de propiedades con fotos y contacto del agente a cargo.
+ * 
+ * @section api Conexión y Autenticación con la API
+ * - Realiza peticiones de obtención (`GET`) a los endpoints públicos del backend: `/api/cantones` y `/api/parroquias/canton/:id`.
+ * - **Autenticación Silenciosa**: Para usuarios no registrados (invitados), efectúa un inicio de sesión transparente con las credenciales por defecto (`admin@inmobiliaria.com`) para obtener el token que autoriza la lectura del catálogo de propiedades.
+ * - **Registro de Interés**: Permite enviar intenciones de compra (`POST /api/intereses`) enviando el token JWT del cliente autenticado.
+ * - **Control de Eliminación**: Permite la eliminación directa de propiedades (`DELETE /api/propiedades/:id`) validando que el rol activo sea 'administrador'.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -24,6 +43,7 @@ import {
 } from 'lucide-react';
 import './CatalogPage.css';
 import ToastContainer, { useToast } from '../Toast';
+import ConfirmDialog from '../ConfirmDialog';
 
 const API_URL = 'http://localhost:3000/api';
 const PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350"><rect fill="#eff6ff" width="500" height="350"/><text fill="#3b82f6" font-family="sans-serif" font-size="18" x="50%" y="50%" text-anchor="middle" dy=".3em">Cargando...</text></svg>');
@@ -92,6 +112,9 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
   const [selectedProp, setSelectedProp] = useState(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
+  // Confirm Delete State
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, message: '', id: null });
+
   // Buy interest and Auth Modal State
   const [interestRegistered, setInterestRegistered] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -118,6 +141,63 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
   const [regError, setRegError] = useState('');
 
   const activeToken = token || guestToken;
+
+  // Helper to fetch properties
+  const fetchPropiedades = async (tok) => {
+    const currentToken = tok || token || guestToken;
+    if (!currentToken) return;
+    try {
+      const propsRes = await fetch(`${API_URL}/propiedades`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        }
+      });
+
+      if (propsRes.ok) {
+        const pData = await propsRes.json();
+        setPropiedades(pData || []);
+      }
+    } catch (err) {
+      console.error('Error fetching properties:', err);
+    }
+  };
+
+  const handleDelete = (id, e) => {
+    if (e) e.stopPropagation();
+    setConfirmDelete({
+      isOpen: true,
+      message: '¿Estás seguro de eliminar esta propiedad de forma permanente?',
+      id
+    });
+  };
+
+  const executeDelete = async () => {
+    const { id } = confirmDelete;
+    if (!id) return;
+    try {
+      const response = await fetch(`${API_URL}/propiedades/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        await fetchPropiedades();
+        if (selectedProp && selectedProp.id === id) {
+          setSelectedProp(null);
+        }
+        showToast('Propiedad eliminada con éxito.', 'success');
+      } else {
+        showToast('Error al eliminar la propiedad.', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting property:', err);
+      showToast('Error al eliminar.', 'error');
+    }
+    setConfirmDelete({ isOpen: false, message: '', id: null });
+  };
 
   // Initial silent auth and fetch
   useEffect(() => {
@@ -153,17 +233,7 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
         // Fetch Propiedades
         if (currentToken) {
-          const propsRes = await fetch(`${API_URL}/propiedades`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${currentToken}`
-            }
-          });
-
-          if (propsRes.ok) {
-            const pData = await propsRes.json();
-            setPropiedades(pData || []);
-          }
+          await fetchPropiedades(currentToken);
         }
       } catch (err) {
         console.error('Error fetching data from API:', err);
@@ -355,6 +425,10 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
       });
       if (res.ok) {
         setInterestRegistered(true);
+        if (selectedProp && selectedProp.id === propId) {
+          setSelectedProp({ ...selectedProp, estado: 'vendida' });
+        }
+        fetchPropiedades(activeUserToken);
       }
     } catch (e) {
       console.error('Error registering purchase interest:', e);
@@ -425,6 +499,24 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
     } catch (error) {
       console.warn('Failed to submit agent request:', error);
       showToast('Error de conexión.', 'error');
+    }
+  };
+
+  const handleDismissSolicitudStatus = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clientes/perfil`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ estadoSolicitud: 'ninguna' })
+      });
+      if (response.ok) {
+        setCurrentUser({ ...currentUser, estadoSolicitud: 'ninguna' });
+      }
+    } catch (error) {
+      console.error('Error al descartar estado de solicitud:', error);
     }
   };
 
@@ -528,6 +620,44 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
           </div>
         </div>
       </header>
+
+      {currentUser && (currentUser.estadoSolicitud === 'aprobada' || currentUser.estadoSolicitud === 'rechazada') && (
+        <div className="max-w-7xl mx-auto px-4 pt-6 sm:px-6 lg:px-8">
+          {currentUser.estadoSolicitud === 'aprobada' ? (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎉</span>
+                <div>
+                  <h4 className="text-sm font-bold text-green-900 text-left">¡Solicitud Aprobada!</h4>
+                  <p className="text-xs text-green-700 text-left">Tu solicitud para ser Agente ha sido aceptada por el Administrador. Ahora tienes privilegios de Agente.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleDismissSolicitudStatus()}
+                className="bg-green-100 hover:bg-green-200 text-green-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+              >
+                Entendido
+              </button>
+            </div>
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">❌</span>
+                <div>
+                  <h4 className="text-sm font-bold text-red-900 text-left">Solicitud Rechazada</h4>
+                  <p className="text-xs text-red-700 text-left">Tu solicitud para ser Agente ha sido rechazada por el Administrador.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleDismissSolicitudStatus()}
+                className="bg-red-100 hover:bg-red-200 text-red-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+              >
+                Entendido
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* HERO SECTION */}
       <section className="catalog-hero">
@@ -726,10 +856,15 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                       ${prop.precio?.toLocaleString('es-EC')}
                     </div>
 
-                    <div className="card-top-tags">
+                    <div className="card-top-tags flex flex-col gap-1.5 items-start">
                       <span className={`tag-type tag-${prop.tipo_inmueble}`}>
                         {prop.tipo_inmueble.toUpperCase()}
                       </span>
+                      {prop.estado === 'vendida' && (
+                        <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow uppercase">
+                          VENDIDA
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -767,6 +902,16 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                         <span>{prop.superficie_m2} m²</span>
                       </div>
                     </div>
+                    {currentUser?.rol === 'administrador' && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={(e) => handleDelete(prop.id, e)}
+                          className="bg-red-500 hover:bg-red-600 text-white font-bold text-xs py-1.5 px-3 rounded-lg transition"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))}
@@ -943,7 +1088,16 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
 
                 {/* PURCHASE CTAS */}
                 <div className="purchase-cta-box bg-slate-50 rounded-2xl p-5 border border-slate-200">
-                  {interestRegistered ? (
+                  {selectedProp.estado === 'vendida' ? (
+                    <div className="text-center py-2">
+                      <div className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1.5 rounded-lg inline-block mb-2 uppercase">
+                        🔴 Vendido
+                      </div>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        Esta propiedad ya ha sido vendida y no está disponible para adquisición.
+                      </p>
+                    </div>
+                  ) : interestRegistered ? (
                     <div className="text-center py-2">
                       <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
                       <h5 className="font-bold text-slate-900 text-sm mb-1">¡Interés Registrado!</h5>
@@ -971,6 +1125,20 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                     </>
                   )}
                 </div>
+
+                {currentUser?.rol === 'administrador' && (
+                  <div className="admin-actions-box mt-4 bg-red-50/50 rounded-2xl p-5 border border-red-200 text-center">
+                    <h5 className="font-bold text-red-800 text-xs mb-3 uppercase tracking-wide">
+                      ⚙️ Acciones de Administrador
+                    </h5>
+                    <button 
+                      onClick={(e) => handleDelete(selectedProp.id, e)} 
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2 px-4 rounded-xl transition"
+                    >
+                      🗑️ Eliminar Propiedad
+                    </button>
+                  </div>
+                )}
 
               </div>
 
@@ -1217,6 +1385,12 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
         </div>
       </footer>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        message={confirmDelete.message}
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete({ isOpen: false, message: '', id: null })}
+      />
     </div>
   );
 }

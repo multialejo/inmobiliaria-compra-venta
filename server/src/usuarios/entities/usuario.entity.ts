@@ -46,6 +46,9 @@ export class Usuario {
   @Column({ name: 'solicitud_agente', type: 'boolean', default: false })
   solicitudAgente: boolean;
 
+  @Column({ name: 'estado_solicitud', length: 50, default: 'ninguna' })
+  estadoSolicitud: string;
+
   @Column({ name: 'experiencia_agente', type: 'text', nullable: true })
   experienciaAgente: string;
 

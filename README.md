@@ -286,6 +286,21 @@ Archivo: `server/.env` (usar `server/.env.example` como plantilla).
 | [`docs/tecnologias.md`](docs/tecnologias.md) | Stack tecnológico detallado |
 | [`server/README.md`](server/README.md) | Documentación del backend (instalación, endpoints, entidades) |
 
+### Diagramas de Arquitectura (UML)
+
+* **Diagrama de Casos de Uso**:
+  ![Diagrama de Casos de Uso](casos_de_uso.jpg)
+
+* **Diagrama de Clases**:
+  ![Diagrama de Clases](diagrama_de_clases.jpg)
+
+* **Diagrama de Componentes**:
+  ![Diagrama de Componentes](diagrama_de_componentes.jpg)
+
+* **Diagrama de Despliegue**:
+  ![Diagrama de Despliegue](diagrama_de_despliegue.jpg)
+
+
 ---
 
 ## Roadmap

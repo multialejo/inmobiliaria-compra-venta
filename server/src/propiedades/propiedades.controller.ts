@@ -1,3 +1,18 @@
+/**
+ * @file propiedades.controller.ts
+ * @brief Controlador REST para la administración de propiedades e inmuebles.
+ * 
+ * @section estructura Estructura del Controlador
+ * Expone los endpoints de la API bajo el prefijo `/api/propiedades`. Se encarga de recibir,
+ * validar y mapear los DTOs de entrada, delegando la lógica de negocio en `PropiedadesService`.
+ * 
+ * @section seguridad Guardias y Roles
+ * - Toda la clase está protegida con `AuthGuard('jwt')` (requiere un token JWT válido) y `RolesGuard`.
+ * - **Creación (POST)** y **Edición (PATCH)**: Restringido a usuarios con rol `administrador` o `agente` (`@Roles('administrador', 'agente')`).
+ * - **Eliminación (DELETE)**: Restringido a usuarios con rol `administrador` o `agente` (`@Roles('administrador', 'agente')`).
+ * - **Búsquedas públicas**: Las búsquedas por Cantón e ID permiten acceso a clientes.
+ */
+
 import {
   Controller,
   Get,

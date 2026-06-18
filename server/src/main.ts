@@ -1,3 +1,23 @@
+/**
+ * @file main.ts
+ * @brief Punto de entrada y configuración global del servidor NestJS.
+ * 
+ * @section bootstrap Inicialización del Servidor
+ * Inicia la aplicación NestJS a partir de `AppModule`. Carga las variables de entorno mediante `ConfigService`.
+ * 
+ * @section api Configuración de la API y CORS
+ * - Define el prefijo global de rutas como `api`, de modo que todos los endpoints comiencen con `/api/...`.
+ * - Habilita CORS (Cross-Origin Resource Sharing) restringiendo los accesos únicamente al origen del cliente
+ *   (configurado en `CORS_ORIGIN`, por defecto http://localhost:5173), permitiendo el envío de credenciales/cookies
+ *   y restringiendo los métodos HTTP permitidos a `GET`, `POST`, `PATCH` y `DELETE`.
+ * 
+ * @section seguridad Seguridad y validaciones
+ * - Middleware `helmet` integrado para asegurar cabeceras HTTP sensibles.
+ * - Middleware `cookieParser` integrado para la lectura/escritura de cookies.
+ * - `ValidationPipe` configurado globalmente para forzar la validación estricta de DTOs,
+ *   limpiando atributos no declarados (whitelist: true) y realizando conversiones de tipo implícitas.
+ */
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

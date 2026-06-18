@@ -21,4 +21,8 @@ export class UpdatePerfilDto {
   @IsOptional()
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   contrasena?: string;
+
+  @IsString()
+  @IsOptional()
+  estadoSolicitud?: string;
 }

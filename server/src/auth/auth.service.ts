@@ -38,6 +38,8 @@ export class AuthService {
         email: usuario.email,
         telefono: usuario.telefono,
         rol: usuario.rol,
+        solicitudAgente: usuario.solicitudAgente,
+        estadoSolicitud: usuario.estadoSolicitud,
       },
     };
   }

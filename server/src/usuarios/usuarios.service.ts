@@ -22,6 +22,7 @@ export class UsuariosService {
         direccion: true,
         rol: true,
         solicitudAgente: true,
+        estadoSolicitud: true,
         experienciaAgente: true,
         licenciaAgente: true,
         motivoAgente: true,
@@ -40,6 +41,7 @@ export class UsuariosService {
         telefono: true,
         rol: true,
         solicitudAgente: true,
+        estadoSolicitud: true,
         fecha_registro: true,
       },
     });
@@ -55,6 +57,7 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
     usuario.solicitudAgente = true;
+    usuario.estadoSolicitud = 'pendiente';
     if (dto.experienciaAgente !== undefined) usuario.experienciaAgente = dto.experienciaAgente;
     if (dto.licenciaAgente !== undefined) usuario.licenciaAgente = dto.licenciaAgente;
     if (dto.motivoAgente !== undefined) usuario.motivoAgente = dto.motivoAgente;
@@ -68,6 +71,13 @@ export class UsuariosService {
     }
     usuario.rol = rol;
     usuario.solicitudAgente = false; // Reset the request status
+    if (rol === RolUsuario.AGENTE) {
+      usuario.estadoSolicitud = 'aprobada';
+    } else if (rol === RolUsuario.CLIENTE) {
+      usuario.estadoSolicitud = 'rechazada';
+    } else {
+      usuario.estadoSolicitud = 'ninguna';
+    }
     return this.usuarioRepository.save(usuario);
   }
 
@@ -81,6 +91,7 @@ export class UsuariosService {
         telefono: true,
         rol: true,
         solicitudAgente: true,
+        estadoSolicitud: true,
         fecha_registro: true,
       },
     });

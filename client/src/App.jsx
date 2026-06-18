@@ -1,3 +1,24 @@
+/**
+ * @file App.jsx
+ * @brief Componente raíz del Frontend y panel de administración principal.
+ * 
+ * @section estructura Estructura del Componente
+ * Controla el flujo de navegación de la aplicación web de bienes raíces, conmutando entre:
+ * - Vista de Catálogo Público (CatalogPage)
+ * - Dashboard Administrativo (propiedades, clientes, usuarios/solicitudes)
+ * 
+ * @section api Conexión con la API Backend
+ * Se comunica con la API de NestJS mediante peticiones HTTP asíncronas hacia la dirección configurada en `API_URL` (http://localhost:3000/api).
+ * Para todas las peticiones que requieren autorización (gestión de inmuebles, listado de clientes, cambio de roles),
+ * se adjunta el token JWT obtenido del inicio de sesión en las cabeceras:
+ * `Authorization: Bearer <token>`
+ * 
+ * @section func Funcionalidades Principales
+ * - Inicio de sesión y persistencia local del estado de autenticación (localStorage).
+ * - Búsqueda, filtrado, creación, edición y eliminación (con ConfirmDialog) de inmuebles.
+ * - Registro de clientes y asignación/solicitud de roles administrativos (Agente, Administrador).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, MapPin, DollarSign, Bed, Bath, Maximize2, Search, ChevronDown, Menu, LogOut, User } from 'lucide-react';
 import './App.css';
@@ -43,7 +64,7 @@ function App() {
   const [formData, setFormData] = useState({
     titulo: '', descripcion: '', precio: '', direccion: '',
     tipo_inmueble: 'casa', superficie_m2: '', canton_id: '', parroquia_id: '',
-    dormitorios: '', banos: '',
+    dormitorios: '', banos: '', estado: 'disponible',
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -81,7 +102,19 @@ function App() {
         fetchClientes();
       }
     }
-  }, [token, currentUser]);
+  }, [token, currentUser?.rol]);
+
+  useEffect(() => {
+    if (token) {
+      const interval = setInterval(() => {
+        fetchUserProfile();
+        if (currentUser?.rol === 'administrador') {
+          fetchUsuarios();
+        }
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [token, currentUser?.rol]);
 
   const fetchUserProfile = async () => {
     try {
@@ -153,6 +186,24 @@ function App() {
       }
     } catch (error) {
       showToast('Error de red al enviar solicitud.', 'error');
+    }
+  };
+
+  const handleDismissSolicitudStatus = async () => {
+    try {
+      const response = await fetch(`${API_URL}/clientes/perfil`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ estadoSolicitud: 'ninguna' })
+      });
+      if (response.ok) {
+        setCurrentUser({ ...currentUser, estadoSolicitud: 'ninguna' });
+      }
+    } catch (error) {
+      console.error('Error al descartar estado de solicitud:', error);
     }
   };
 
@@ -319,6 +370,7 @@ function App() {
       parroquia_id: formData.parroquia_id ? Number(formData.parroquia_id) : undefined,
       agente_id: currentUser?.id,
       imagenes: imagenes.length > 0 ? imagenes : undefined,
+      estado: formData.estado,
     };
 
     try {
@@ -353,6 +405,7 @@ function App() {
       parroquia_id: prop.parroquia_id,
       dormitorios: descData.dormitorios || '',
       banos: descData.banos || '',
+      estado: prop.estado || 'disponible',
     });
     if (prop.canton_id) fetchParroquias(prop.canton_id);
     setImagenes(prop.imagenes || []);
@@ -363,7 +416,7 @@ function App() {
   const cancelEdit = () => {
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ titulo: '', descripcion: '', precio: '', direccion: '', tipo_inmueble: 'casa', superficie_m2: '', canton_id: '', parroquia_id: '', dormitorios: '', banos: '' });
+    setFormData({ titulo: '', descripcion: '', precio: '', direccion: '', tipo_inmueble: 'casa', superficie_m2: '', canton_id: '', parroquia_id: '', dormitorios: '', banos: '', estado: 'disponible' });
     setParroquias([]);
     setImagenes([]);
     setImagenUrl('');
@@ -640,6 +693,44 @@ function App() {
       </header>
 
       <main>
+        {currentUser && (currentUser.estadoSolicitud === 'aprobada' || currentUser.estadoSolicitud === 'rechazada') && (
+          <div className="max-w-7xl mx-auto px-4 pt-6 sm:px-6 lg:px-8">
+            {currentUser.estadoSolicitud === 'aprobada' ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🎉</span>
+                  <div>
+                    <h4 className="text-sm font-bold text-green-900">¡Solicitud Aprobada!</h4>
+                    <p className="text-xs text-green-700">Tu solicitud para ser Agente ha sido aceptada por el Administrador. Ahora tienes privilegios de Agente.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleDismissSolicitudStatus()}
+                  className="bg-green-100 hover:bg-green-200 text-green-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                >
+                  Entendido
+                </button>
+              </div>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">❌</span>
+                  <div>
+                    <h4 className="text-sm font-bold text-red-900">Solicitud Rechazada</h4>
+                    <p className="text-xs text-red-700">Tu solicitud para ser Agente ha sido rechazada por el Administrador.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleDismissSolicitudStatus()}
+                  className="bg-red-100 hover:bg-red-200 text-red-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                >
+                  Entendido
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'propiedades' && (
           <>
             <div className="bg-white border-b border-gray-200">
@@ -705,6 +796,14 @@ function App() {
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Número de baños" />
                     <input type="number" name="superficie_m2" placeholder="Área (m²)" value={formData.superficie_m2} onChange={handleInputChange} required
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Superficie en metros cuadrados" />
+                    {isEditing && (
+                      <select name="estado" value={formData.estado} onChange={handleInputChange}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-yellow-50 font-bold" aria-label="Estado de disponibilidad">
+                        <option value="disponible">🟢 Disponible</option>
+                        <option value="reservada">🟡 Reservada</option>
+                        <option value="vendida">🔴 Vendida</option>
+                      </select>
+                    )}
                       </div>
                       <div className="mb-4">
                       <textarea name="descripcion" placeholder="Descripción detallada" value={formData.descripcion} onChange={handleInputChange} required
@@ -772,6 +871,15 @@ function App() {
                         <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">
                           ${prop.precio?.toLocaleString()}
                         </div>
+                        {prop.estado === 'vendida' ? (
+                          <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold uppercase shadow">
+                            Vendido
+                          </div>
+                        ) : (
+                          <div className="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded text-xs font-bold uppercase shadow">
+                            Disponible
+                          </div>
+                        )}
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-900 mb-2 text-sm">{prop.titulo}</h3>
