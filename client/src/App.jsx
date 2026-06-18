@@ -297,7 +297,7 @@ function App() {
       setLoading(true);
       const response = await fetch(`${API_URL}/propiedades`, { headers: authHeaders });
       const data = await response.json();
-      setPropiedades(data);
+      setPropiedades(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al obtener propiedades:', error);
     } finally {
