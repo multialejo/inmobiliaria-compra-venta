@@ -20,11 +20,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Edit2, Trash2, MapPin, DollarSign, Bed, Bath, Maximize2, Search, ChevronDown, Menu, LogOut, User } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, MapPin, DollarSign, Bed, Bath, Maximize2, Search, ChevronDown, Menu, LogOut, User, Building } from 'lucide-react';
 import './App.css';
 import CatalogPage from './components/CatalogPage/CatalogPage';
 import ToastContainer, { useToast } from './components/Toast';
 import ConfirmDialog from './components/ConfirmDialog';
+import RejectionModal from './components/RejectionModal';
 
 const API_URL = 'http://localhost:3000/api';
 
@@ -36,6 +37,8 @@ function App() {
   const [showFormProp, setShowFormProp] = useState(false);
   const [showFormCliente, setShowFormCliente] = useState(false);
   const [selectedProp, setSelectedProp] = useState(null);
+  const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+  const [rejectingUsuarioId, setRejectingUsuarioId] = useState(null);
 
   const [propiedades, setPropiedades] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -602,7 +605,9 @@ function App() {
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">RE</div>
+                  <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
+                    <Building className="w-5 h-5" />
+                  </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">InmoEcuador</h1>
                     <p className="text-xs text-gray-500">Bolívar, Ecuador</p>
@@ -653,59 +658,72 @@ function App() {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">RE</div>
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
+                  <Building className="w-5 h-5" />
+                </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">InmoEcuador</h1>
                   <p className="text-xs text-gray-500">Bolívar, Ecuador</p>
                 </div>
               </div>
-              <nav className="hidden md:flex items-center gap-6">
-                <button onClick={() => setCurrentPage('catalog')}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition mr-2">
-                  Ver Catálogo
+              <nav className="hidden md:flex items-center gap-4">
+                <button 
+                  onClick={() => setCurrentPage('catalog')}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold tracking-wide uppercase transition duration-150 flex items-center gap-1.5 shadow-sm"
+                >
+                  <Building className="w-3.5 h-3.5" /> Ver Catálogo
                 </button>
-                <button onClick={() => setActiveTab('propiedades')}
-                  className={`text-sm font-medium transition ${activeTab === 'propiedades' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                  Propiedades
-                </button>
-                {currentUser?.rol !== 'cliente' && (
-                  <button onClick={() => setActiveTab('clientes')}
-                    className={`text-sm font-medium transition ${activeTab === 'clientes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Clientes
+                
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setActiveTab('propiedades')}
+                    className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'propiedades' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+                    Propiedades
                   </button>
-                )}
-                {currentUser?.rol !== 'cliente' && (
-                  <button onClick={() => setActiveTab('compras')}
-                    className={`text-sm font-medium transition ${activeTab === 'compras' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Ventas/Reservas
-                  </button>
-                )}
-                {currentUser?.rol === 'administrador' && (
-                  <button onClick={() => setActiveTab('usuarios')}
-                    className={`text-sm font-medium transition ${activeTab === 'usuarios' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                    Usuarios/Solicitudes
-                  </button>
-                )}
-                <span className="flex items-center gap-1.5 text-sm text-gray-500 border-l pl-4 ml-2">
-                  <User className="w-4 h-4" />
-                  {currentUser?.nombre} ({currentUser?.rol?.toUpperCase()})
+                  {currentUser?.rol !== 'cliente' && (
+                    <button onClick={() => setActiveTab('clientes')}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'clientes' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+                      Clientes
+                    </button>
+                  )}
+                  {currentUser?.rol !== 'cliente' && (
+                    <button onClick={() => setActiveTab('compras')}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'compras' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+                      Ventas/Reservas
+                    </button>
+                  )}
+                  {currentUser?.rol === 'administrador' && (
+                    <button onClick={() => setActiveTab('usuarios')}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'usuarios' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+                      Usuarios/Solicitudes
+                    </button>
+                  )}
+                </div>
+
+                <span className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
+                  <User className="w-3.5 h-3.5 text-gray-400" />
+                  <span>{currentUser?.nombre}</span>
+                  <span className="bg-gray-200 text-gray-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                    {currentUser?.rol}
+                  </span>
                 </span>
+                
                 {currentUser?.rol === 'cliente' && (
                   currentUser.solicitudAgente ? (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2.5 py-1.5 rounded-lg font-bold">
-                      ⏳ Solicitud Agente Pendiente
+                    <span className="text-xs bg-yellow-50 text-yellow-800 border border-yellow-250 px-3 py-1.5 rounded-xl font-medium">
+                      Solicitud Pendiente
                     </span>
                   ) : (
                     <button 
                       onClick={handleSolicitarAgente}
-                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition"
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl font-bold transition"
                     >
-                      🔑 Solicitar ser Agente
+                      Solicitar ser Agente
                     </button>
                   )
                 )}
-                <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition">
-                  <LogOut className="w-4 h-4" /> Salir
+                
+                <button onClick={handleLogout} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-xl transition duration-150">
+                  <LogOut className="w-3.5 h-3.5" /> Salir
                 </button>
               </nav>
               <button className="md:hidden text-gray-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menú de navegación">
@@ -1258,10 +1276,8 @@ function App() {
                               </button>
                               <button 
                                 onClick={() => {
-                                  const motivo = prompt('Ingrese el motivo del rechazo para la solicitud de ser agente (opcional):');
-                                  if (motivo !== null) {
-                                    handleCambiarRol(usuario.id, 'cliente', motivo);
-                                  }
+                                  setRejectingUsuarioId(usuario.id);
+                                  setIsRejectionModalOpen(true);
                                 }}
                                 className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-red-600 transition"
                               >
@@ -1312,6 +1328,18 @@ function App() {
         message={confirmDelete.message}
         onConfirm={executeDelete}
         onCancel={() => setConfirmDelete({ isOpen: false, message: '', id: null, type: '' })}
+      />
+      <RejectionModal
+        isOpen={isRejectionModalOpen}
+        onConfirm={(motivo) => {
+          handleCambiarRol(rejectingUsuarioId, 'cliente', motivo);
+          setIsRejectionModalOpen(false);
+          setRejectingUsuarioId(null);
+        }}
+        onCancel={() => {
+          setIsRejectionModalOpen(false);
+          setRejectingUsuarioId(null);
+        }}
       />
     </div>
   );

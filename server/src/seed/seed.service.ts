@@ -23,12 +23,12 @@ export class SeedService implements OnModuleInit {
 
   async onModuleInit() {
     const count = await this.cantonRepository.count();
-    if (count > 0) {
+    if (count === 0) {
+      await this.seedBolivar();
+      await this.seedUsuarios();
+    } else {
       console.log('Los datos de Bolívar ya están seedeados');
-      return;
     }
-    await this.seedBolivar();
-    await this.seedUsuarios();
     await this.seedPropiedades();
   }
 
@@ -87,6 +87,7 @@ export class SeedService implements OnModuleInit {
 
     const agentes = await this.usuarioRepository.find({
       where: { rol: RolUsuario.AGENTE },
+      order: { email: 'ASC' },
     });
 
     if (agentes.length === 0) {
@@ -94,7 +95,8 @@ export class SeedService implements OnModuleInit {
       return;
     }
 
-    const agente = agentes[0];
+    const agente1 = agentes[0];
+    const agente2 = agentes[1] || agentes[0];
 
     const properties = [
       {
@@ -110,7 +112,7 @@ export class SeedService implements OnModuleInit {
         superficie_m2: 180,
         canton_id: 201,
         parroquia_id: 20101,
-        agente_id: agente.id,
+        agente_id: agente1.id,
         imagenes: [
           'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=600&q=80',
           'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80',
@@ -129,7 +131,7 @@ export class SeedService implements OnModuleInit {
         superficie_m2: 85,
         canton_id: 201,
         parroquia_id: 20102,
-        agente_id: agente.id,
+        agente_id: agente1.id,
         imagenes: [
           'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80',
         ],
@@ -147,7 +149,7 @@ export class SeedService implements OnModuleInit {
         superficie_m2: 500,
         canton_id: 205,
         parroquia_id: 20550,
-        agente_id: agente.id,
+        agente_id: agente1.id,
         imagenes: [
           'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80',
         ],
@@ -165,7 +167,7 @@ export class SeedService implements OnModuleInit {
         superficie_m2: 300,
         canton_id: 203,
         parroquia_id: 20350,
-        agente_id: agente.id,
+        agente_id: agente2.id,
         imagenes: [
           'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=600&q=80',
         ],
@@ -183,9 +185,63 @@ export class SeedService implements OnModuleInit {
         superficie_m2: 60,
         canton_id: 206,
         parroquia_id: 20650,
-        agente_id: agente.id,
+        agente_id: agente2.id,
         imagenes: [
           'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=600&q=80',
+        ],
+      },
+      {
+        titulo: 'Moderna Oficina Comercial en Guaranda',
+        direccion: 'Sucre y 10 de Agosto, Guaranda',
+        descripcion: JSON.stringify({
+          texto: 'Oficina comercial moderna ubicada en el corazón de la ciudad. Perfecta para consultorios, estudios jurídicos o agencias administrativas. Cuenta con baño privado y excelente iluminación.',
+          dormitorios: 0,
+          banos: 1,
+        }),
+        precio: 32000.00,
+        tipo_inmueble: TipoInmueble.LOCAL,
+        superficie_m2: 45,
+        canton_id: 201,
+        parroquia_id: 20101,
+        agente_id: agente2.id,
+        imagenes: [
+          'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80',
+        ],
+      },
+      {
+        titulo: 'Hacienda Agrícola en Chillanes',
+        direccion: 'Vía a Bucay Km 5, Chillanes',
+        descripcion: JSON.stringify({
+          texto: 'Hermosa hacienda productiva con abundante agua de riego, pastizales de primera y casa de hacienda rústica. Ideal para ganadería y agricultura.',
+          dormitorios: 4,
+          banos: 2,
+        }),
+        precio: 120000.00,
+        tipo_inmueble: TipoInmueble.TERRENO,
+        superficie_m2: 15000,
+        canton_id: 202,
+        parroquia_id: 20250,
+        agente_id: agente2.id,
+        imagenes: [
+          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80',
+        ],
+      },
+      {
+        titulo: 'Hermoso Departamento de Lujo en Guaranda',
+        direccion: 'Av. Archidona, Guaranda',
+        descripcion: JSON.stringify({
+          texto: 'Departamento de lujo con acabados de primera clase. Cuenta con tres habitaciones amplias, balcón panorámico y estacionamiento privado techado.',
+          dormitorios: 3,
+          banos: 2,
+        }),
+        precio: 75000.00,
+        tipo_inmueble: TipoInmueble.DEPARTAMENTO,
+        superficie_m2: 110,
+        canton_id: 201,
+        parroquia_id: 20102,
+        agente_id: agente2.id,
+        imagenes: [
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80',
         ],
       },
     ];
@@ -208,3 +264,5 @@ export class SeedService implements OnModuleInit {
     await this.seedPropiedades();
   }
 }
+// Force restart seed
+
