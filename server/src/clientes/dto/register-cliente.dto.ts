@@ -11,13 +11,11 @@ export class RegisterClienteDto {
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   contrasena: string;
 
-  @IsString()
-  @IsOptional()
-  telefono?: string;
+  @IsString({ message: 'El teléfono es obligatorio' })
+  telefono: string;
 
-  @IsString()
-  @IsOptional()
-  cedula?: string;
+  @IsString({ message: 'La cédula es obligatoria' })
+  cedula: string;
 
   @IsString()
   @IsOptional()

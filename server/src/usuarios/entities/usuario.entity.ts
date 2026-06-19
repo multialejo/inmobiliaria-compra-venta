@@ -58,6 +58,9 @@ export class Usuario {
   @Column({ name: 'motivo_agente', type: 'text', nullable: true })
   motivoAgente: string;
 
+  @Column({ name: 'motivo_rechazo', type: 'text', nullable: true })
+  motivoRechazo: string | null;
+
   @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
 

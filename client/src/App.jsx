@@ -73,7 +73,7 @@ function App() {
 
   const [clientes, setClientes] = useState([]);
   const [compras, setCompras] = useState([]);
-  const [formCliente, setFormCliente] = useState({ nombre: '', email: '', telefono: '', interes: '' });
+  const [formCliente, setFormCliente] = useState({ nombre: '', email: '', telefono: '', cedula: '', interes: '' });
   const [editandoCliente, setEditandoCliente] = useState(null);
   const [showClienteForm, setShowClienteForm] = useState(false);
 
@@ -250,15 +250,19 @@ function App() {
     }
   };
 
-  const handleCambiarRol = async (usuarioId, nuevoRol) => {
+  const handleCambiarRol = async (usuarioId, nuevoRol, motivoRechazo) => {
     try {
+      const body = { rol: nuevoRol };
+      if (motivoRechazo !== undefined) {
+        body.motivoRechazo = motivoRechazo;
+      }
       const response = await fetch(`${API_URL}/usuarios/${usuarioId}/rol`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ rol: nuevoRol })
+        body: JSON.stringify(body)
       });
       if (response.ok) {
         showToast('Rol actualizado con éxito.', 'success');
@@ -520,43 +524,46 @@ function App() {
   };
 
   const agregarCliente = async () => {
-    if (formCliente.nombre && formCliente.email) {
-      try {
-        const body = {
-          nombre: formCliente.nombre,
-          email: formCliente.email,
-          telefono: formCliente.telefono || undefined,
-          contrasena: 'cliente123',
-        };
+    if (!formCliente.nombre || !formCliente.email || !formCliente.telefono || !formCliente.cedula) {
+      showToast('Nombre, Email, Teléfono y Cédula son obligatorios.', 'error');
+      return;
+    }
+    try {
+      const body = {
+        nombre: formCliente.nombre,
+        email: formCliente.email,
+        telefono: formCliente.telefono,
+        cedula: formCliente.cedula,
+        contrasena: 'cliente123',
+      };
 
-        const url = editandoCliente 
-          ? `${API_URL}/usuarios/${editandoCliente.id}` 
-          : `${API_URL}/clientes/register`;
-        
-        const method = editandoCliente ? 'PATCH' : 'POST';
+      const url = editandoCliente 
+        ? `${API_URL}/usuarios/${editandoCliente.id}` 
+        : `${API_URL}/clientes/register`;
+      
+      const method = editandoCliente ? 'PATCH' : 'POST';
 
-        const response = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify(body)
-        });
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      });
 
-        if (response.ok) {
-          showToast(editandoCliente ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.', 'success');
-          fetchClientes();
-          setFormCliente({ nombre: '', email: '', telefono: '', interes: '' });
-          setEditandoCliente(null);
-          setShowClienteForm(false);
-        } else {
-          const err = await response.json();
-          showToast('Error: ' + (err.message || 'Error en la operación'), 'error');
-        }
-      } catch (error) {
-        showToast('Error de conexión al guardar cliente.', 'error');
+      if (response.ok) {
+        showToast(editandoCliente ? 'Cliente actualizado con éxito.' : 'Cliente registrado con éxito.', 'success');
+        fetchClientes();
+        setFormCliente({ nombre: '', email: '', telefono: '', cedula: '', interes: '' });
+        setEditandoCliente(null);
+        setShowClienteForm(false);
+      } else {
+        const err = await response.json();
+        showToast('Error: ' + (err.message || 'Error en la operación'), 'error');
       }
+    } catch (error) {
+      showToast('Error de conexión al guardar cliente.', 'error');
     }
   };
 
@@ -771,6 +778,9 @@ function App() {
                   <div>
                     <h4 className="text-sm font-bold text-red-900">Solicitud Rechazada</h4>
                     <p className="text-xs text-red-700">Tu solicitud para ser Agente ha sido rechazada por el Administrador.</p>
+                    {currentUser.motivoRechazo && (
+                      <p className="text-xs text-red-800 mt-1 font-semibold">Motivo: {currentUser.motivoRechazo}</p>
+                    )}
                   </div>
                 </div>
                 <button 
@@ -1009,7 +1019,7 @@ function App() {
             <div className="mb-6 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Clientes Registrados</h2>
               {currentUser?.rol === 'administrador' && (
-                <button onClick={() => { setEditandoCliente(null); setFormCliente({ nombre: '', email: '', telefono: '', interes: '' }); setShowClienteForm(!showClienteForm); }}
+                <button onClick={() => { setEditandoCliente(null); setFormCliente({ nombre: '', email: '', telefono: '', cedula: '', interes: '' }); setShowClienteForm(!showClienteForm); }}
                   className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2">
                   <Plus className="w-5 h-5" /> Registrar Cliente
                 </button>
@@ -1031,7 +1041,10 @@ function App() {
                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Correo electrónico" />
                   <input type="tel" placeholder="Teléfono" value={formCliente.telefono}
                     onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Teléfono" />
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Teléfono" required />
+                  <input type="text" placeholder="Cédula" value={formCliente.cedula || ''}
+                    onChange={(e) => setFormCliente({ ...formCliente, cedula: e.target.value })}
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Cédula" required />
                   <input type="text" placeholder="Tipo de interés" value={formCliente.interes}
                     onChange={(e) => setFormCliente({ ...formCliente, interes: e.target.value })}
                     className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Tipo de interés" />
@@ -1244,7 +1257,12 @@ function App() {
                                 Aprobar Agente
                               </button>
                               <button 
-                                onClick={() => handleCambiarRol(usuario.id, 'cliente')}
+                                onClick={() => {
+                                  const motivo = prompt('Ingrese el motivo del rechazo para la solicitud de ser agente (opcional):');
+                                  if (motivo !== null) {
+                                    handleCambiarRol(usuario.id, 'cliente', motivo);
+                                  }
+                                }}
                                 className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-red-600 transition"
                               >
                                 Rechazar

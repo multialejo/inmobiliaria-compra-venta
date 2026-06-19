@@ -26,6 +26,7 @@ export class UsuariosService {
         experienciaAgente: true,
         licenciaAgente: true,
         motivoAgente: true,
+        motivoRechazo: true,
         fecha_registro: true,
       },
     });
@@ -58,13 +59,14 @@ export class UsuariosService {
     }
     usuario.solicitudAgente = true;
     usuario.estadoSolicitud = 'pendiente';
+    usuario.motivoRechazo = null; // Clear rejection reason when requesting again
     if (dto.experienciaAgente !== undefined) usuario.experienciaAgente = dto.experienciaAgente;
     if (dto.licenciaAgente !== undefined) usuario.licenciaAgente = dto.licenciaAgente;
     if (dto.motivoAgente !== undefined) usuario.motivoAgente = dto.motivoAgente;
     return this.usuarioRepository.save(usuario);
   }
 
-  async updateRol(id: string, rol: RolUsuario) {
+  async updateRol(id: string, rol: RolUsuario, motivoRechazo?: string) {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
@@ -73,10 +75,13 @@ export class UsuariosService {
     usuario.solicitudAgente = false; // Reset the request status
     if (rol === RolUsuario.AGENTE) {
       usuario.estadoSolicitud = 'aprobada';
+      usuario.motivoRechazo = null;
     } else if (rol === RolUsuario.CLIENTE) {
       usuario.estadoSolicitud = 'rechazada';
+      usuario.motivoRechazo = motivoRechazo || null;
     } else {
       usuario.estadoSolicitud = 'ninguna';
+      usuario.motivoRechazo = null;
     }
     return this.usuarioRepository.save(usuario);
   }

@@ -36,9 +36,9 @@ export class UsuariosController {
   @Roles('administrador')
   updateRol(
     @Param('id') id: string,
-    @Body('rol') rol: RolUsuario,
+    @Body() dto: { rol: RolUsuario; motivoRechazo?: string },
   ) {
-    return this.usuariosService.updateRol(id, rol);
+    return this.usuariosService.updateRol(id, dto.rol, dto.motivoRechazo);
   }
 
   @Patch(':id')

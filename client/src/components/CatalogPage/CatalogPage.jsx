@@ -126,6 +126,24 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
   const [solicitudExperiencia, setSolicitudExperiencia] = useState('');
   const [solicitudLicencia, setSolicitudLicencia] = useState('');
   const [solicitudMotivo, setSolicitudMotivo] = useState('');
+
+  // Mis Compras State
+  const [showMyPurchasesModal, setShowMyPurchasesModal] = useState(false);
+  const [myPurchases, setMyPurchases] = useState([]);
+
+  const fetchMyPurchases = async () => {
+    try {
+      const res = await fetch(`${API_URL}/compras/mis-compras`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyPurchases(data);
+      }
+    } catch (e) {
+      console.error('Error fetching purchases:', e);
+    }
+  };
   
   // Auth Form State
   const [authEmail, setAuthEmail] = useState('');
@@ -619,18 +637,26 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                 </span>
 
                 {currentUser.rol === 'cliente' && (
-                  currentUser.solicitudAgente ? (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1.5 rounded-lg font-bold" title="Solicitud Agente Pendiente">
-                      ⏳ Pendiente
-                    </span>
-                  ) : (
+                  <>
                     <button 
-                      onClick={handleSolicitarAgenteClick}
-                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition"
+                      onClick={() => { setShowMyPurchasesModal(true); fetchMyPurchases(); }} 
+                      className="text-xs bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1"
                     >
-                      🔑 Ser Agente
+                      🛒 Mis Compras
                     </button>
-                  )
+                    {currentUser.solicitudAgente ? (
+                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1.5 rounded-lg font-bold" title="Solicitud Agente Pendiente">
+                        ⏳ Pendiente
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={handleSolicitarAgenteClick}
+                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition"
+                      >
+                        🔑 Ser Agente
+                      </button>
+                    )}
+                  </>
                 )}
                 
                 {currentUser.rol !== 'cliente' && (
@@ -683,6 +709,9 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                 <div>
                   <h4 className="text-sm font-bold text-red-900 text-left">Solicitud Rechazada</h4>
                   <p className="text-xs text-red-700 text-left">Tu solicitud para ser Agente ha sido rechazada por el Administrador.</p>
+                  {currentUser.motivoRechazo && (
+                    <p className="text-xs text-red-800 mt-1 font-semibold text-left">Motivo: {currentUser.motivoRechazo}</p>
+                  )}
                 </div>
               </div>
               <button 
@@ -1397,25 +1426,27 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom" htmlFor="reg-telefono">Teléfono (opcional)</label>
+                  <label className="input-label-custom" htmlFor="reg-telefono">Teléfono</label>
                   <input
                     id="reg-telefono"
                     type="text"
                     value={regTelefono}
                     onChange={(e) => setRegTelefono(e.target.value)}
                     className="input-custom"
+                    required
                     placeholder="0999999999"
                   />
                 </div>
 
                 <div className="form-group-custom">
-                  <label className="input-label-custom" htmlFor="reg-cedula">Cédula (opcional)</label>
+                  <label className="input-label-custom" htmlFor="reg-cedula">Cédula</label>
                   <input
                     id="reg-cedula"
                     type="text"
                     value={regCedula}
                     onChange={(e) => setRegCedula(e.target.value)}
                     className="input-custom"
+                    required
                     placeholder="0201234567"
                   />
                 </div>
@@ -1504,6 +1535,66 @@ export default function CatalogPage({ currentUser, token, setToken, setCurrentUs
                 Enviar Solicitud
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MIS COMPRAS MODAL */}
+      {showMyPurchasesModal && (
+        <div
+          className="modal-backdrop fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowMyPurchasesModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="purchases-modal-title"
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowMyPurchasesModal(false); }}
+        >
+          <div className="auth-modal-content bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowMyPurchasesModal(false)} className="modal-close-btn absolute top-6 right-6" aria-label="Cerrar">
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+
+            <h3 className="text-2xl font-black text-slate-900 mb-6" id="purchases-modal-title">Mis Compras y Reservas</h3>
+            
+            {myPurchases.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="text-4xl">🛒</span>
+                <p className="text-slate-500 text-sm mt-3 font-medium">Aún no has realizado ninguna compra o reserva.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myPurchases.map((compra) => (
+                  <div key={compra.id} className="border border-slate-100 bg-slate-50/50 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition hover:bg-slate-50 hover:shadow-sm">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-slate-850 text-base text-left">{compra.propiedad?.titulo || 'Propiedad sin título'}</h4>
+                      <p className="text-xs text-slate-500 flex items-center gap-1 text-left">
+                        📍 {compra.propiedad?.direccion || 'Sin dirección'}
+                      </p>
+                      <p className="text-xs text-slate-600 font-semibold mt-1 text-left">
+                        Precio Acordado: <span className="text-blue-650 font-bold">${compra.precio_acordado?.toLocaleString()}</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium text-left">
+                        Fecha: {new Date(compra.fecha_compra).toLocaleDateString()} {new Date(compra.fecha_compra).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                        compra.estado === 'aprobada' ? 'bg-green-100 text-green-800' :
+                        compra.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {compra.estado}
+                      </span>
+                      {compra.propiedad?.agente && (
+                        <p className="text-[10px] text-slate-500">
+                          Agente: <span className="font-semibold text-slate-700">{compra.propiedad.agente.nombre}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
