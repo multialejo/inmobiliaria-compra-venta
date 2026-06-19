@@ -120,6 +120,7 @@ export class UsuariosService {
       throw new NotFoundException('Usuario no encontrado');
     }
     await this.usuarioRepository.manager.delete('intereses', { cliente_id: id });
+    await this.usuarioRepository.manager.delete('compras', { cliente_id: id });
     await this.usuarioRepository.remove(usuario);
     return { message: 'Usuario de baja exitosa' };
   }
